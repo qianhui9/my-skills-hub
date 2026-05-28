@@ -18,3 +18,11 @@ A curated collection of selected skills synced from upstream repositories.
 
 ```bash
 python scripts/sync_skills.py
+
+## Visual execution steps:
+
+- Add skills information to the sources/skills.json file;
+
+- Go to Actions → Sync skills → Run workflow;
+
+- Merge the skills in the Pull requests section, and you'll see the new skills displayed in the skills/ directory.
