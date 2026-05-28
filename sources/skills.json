@@ -14,6 +14,15 @@
         "__pycache__",
         ".DS_Store"
       ]
+    },
+    {
+      "name": "nature-skills",
+      "enabled": true,
+      "repo": "https://github.com/Yuan1z0825/nature-skills.git",
+      "ref": "main",
+      "source_subdir": ".",
+      "target_dir": "skills/nature-skills",
+      "exclude": [".git", ".github", "node_modules", "__pycache__", ".DS_Store"]
     }
   ]
 }
