@@ -19,7 +19,8 @@ A curated collection of selected skills synced from upstream repositories.
 ```bash
 python scripts/sync_skills.py
 
-## Visual execution steps:
+
+## Visual execution steps
 
 - Add skills information to the sources/skills.json file;
 
