@@ -1,0 +1,38 @@
+﻿name: Sync skills
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * *"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Sync skills from upstream
+        run: python scripts/sync_skills.py
+
+      - name: Create pull request if changed
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "chore: sync skills from upstream"
+          title: "chore: sync skills from upstream"
+          body: |
+            Automated sync of selected skills from configured upstream repositories.
+
+            Please review license, breaking changes, and skill behavior before merging.
+          branch: "chore/sync-skills"
+          delete-branch: true

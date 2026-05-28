@@ -1,0 +1,19 @@
+﻿{
+  "skills": [
+    {
+      "name": "autoresearch",
+      "enabled": true,
+      "repo": "https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep.git",
+      "ref": "main",
+      "source_subdir": ".",
+      "target_dir": "skills/autoresearch",
+      "exclude": [
+        ".git",
+        ".github",
+        "node_modules",
+        "__pycache__",
+        ".DS_Store"
+      ]
+    }
+  ]
+}
