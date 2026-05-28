@@ -12,6 +12,7 @@ A curated collection of selected skills synced from upstream repositories.
 ## Current skills
 
 - `autoresearch`: synced from `wanshuiyin/Auto-claude-code-research-in-sleep`
+- `nature-skills`: synced from `Yuan1z0825/nature-skills`
 
 ## Sync locally
 
