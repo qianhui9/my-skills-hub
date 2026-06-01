@@ -1,0 +1,37 @@
+# Raw corpus papers — copyright, never commit
+01_corpus/*/raw/
+01_corpus/*/converted/
+raw/
+
+# Author's unpublished manuscripts — entire folder is private
+04_manuscripts/
+manuscript.pdf
+
+# JEM and JEM_CarbonTax — tied to unpublished work
+01_corpus/Journal_of_Environmental_Management/
+01_corpus/Journal_of_Environmental_Management_CarbonTax/
+02_journal_style/Journal_of_Environmental_Management/
+02_journal_style/Journal_of_Environmental_Management_CarbonTax/
+03_skills/Journal_of_Environmental_Management/
+03_skills/Journal_of_Environmental_Management_CarbonTax/
+
+# Claude Code internals
+.claude/
+
+# Local private scripts
+00_local_only/
+HANDOVER*.md
+
+# OS artifacts
+.DS_Store
+**/.DS_Store
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.spl

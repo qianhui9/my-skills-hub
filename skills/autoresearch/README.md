@@ -32,10 +32,42 @@
 >
 > 🌐 *Same workflow, different deliverable — [**ARIS-Homepage v1 live demo**](https://wanshuiyin.github.io/) (CV → fact-checked single-file academic homepage via `/homepage-generator`).*
 
+🛰 **社区好物 · [Claude Fleet](https://github.com/tianyilt/claude-fleet)**（by [@tianyilt](https://github.com/tianyilt)）—— 一个本地**只读**数据看板，同时盯住你开的一堆 **Claude Code / Codex** 窗口：triage（谁在干活 / 等你点权限 / 跑完了）· 一键 **Focus** 跳到对应终端 · ~50ms 全文搜所有 transcript · skill / memory 用量分析。像 ARIS 这种动辄并行一片 agent 的工作流特别合适。**好用的话点个 ⭐**
+
+<p align="center">
+  <a href="https://github.com/tianyilt/claude-fleet">
+    <img src="assets/claude-fleet-preview.png" alt="Claude Fleet — a dashboard for many concurrent Claude Code / Codex windows (triage, Focus, full-text search, skill/memory analytics)" width="100%">
+  </a>
+</p>
+
+<details>
+<summary><b>Run it in 30 seconds</b></summary>
+
+```bash
+git clone https://github.com/tianyilt/claude-fleet
+cd claude-fleet && bash run.sh
+# open http://127.0.0.1:7878 in your browser
+```
+
+</details>
+
 🔥 [**ARIS-Code CLI — 独立安装版**](docs/ARIS-Code-README_CN.md) · [English](docs/ARIS-Code-README_EN.md) | [⬇️ Download](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/releases/latest)
 
-> 📰 **ARIS-Code v0.4.5 → v0.4.15** (2026-05) — an eleven-release polish run: **new providers** (DeepSeek V4 Pro / Xiaomi MiMo / Qwen 3.6 / Doubao / Custom OpenAI-compatible / DashScope), **first-class reasoning + tool-use**, **stream + MCP reliability** (closes [#228](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/issues/228) / [#151](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/issues/151) / [#172](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/issues/172) / [#249](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/issues/249)), **security hardening** (system-prompt secret redaction; opt-in `sandbox.strictMode`, [#238](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/issues/238)), **multi-provider pricing**, **skills bundle + drift-CI sync**, and assorted fixes ([#232](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/issues/232) DeepSeek deprecation, PermissionMode silent-allow, hardcoded date, reviewer reset). Per-release detail below. Credits: [@GetIT-Sunday](https://github.com/GetIT-Sunday), [@Anduin9527](https://github.com/Anduin9527), [@GO-player-hhy](https://github.com/GO-player-hhy), [@Jxy-yxJ](https://github.com/Jxy-yxJ), [@screw-44](https://github.com/screw-44), [@StevenUST](https://github.com/StevenUST), [@opposj](https://github.com/opposj), [@ShijunLei-cn](https://github.com/ShijunLei-cn), [@algojogacor](https://github.com/algojogacor).
->
+<table>
+<tr>
+<td valign="top" width="60%">
+
+📰 **ARIS-Code v0.4.5 → v0.4.15** (2026-05) — an eleven-release polish run: **new providers** (DeepSeek V4 Pro / Xiaomi MiMo / Qwen 3.6 / Doubao / Custom OpenAI-compatible / DashScope), **first-class reasoning + tool-use**, **stream + MCP reliability** (closes [#228](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/issues/228) / [#151](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/issues/151) / [#172](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/issues/172) / [#249](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/issues/249)), **security hardening** (system-prompt secret redaction; opt-in `sandbox.strictMode`, [#238](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/issues/238)), **multi-provider pricing**, **skills bundle + drift-CI sync**, and assorted fixes ([#232](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/issues/232) DeepSeek deprecation, PermissionMode silent-allow, hardcoded date, reviewer reset). Per-release detail below. Credits: [@GetIT-Sunday](https://github.com/GetIT-Sunday), [@Anduin9527](https://github.com/Anduin9527), [@GO-player-hhy](https://github.com/GO-player-hhy), [@Jxy-yxJ](https://github.com/Jxy-yxJ), [@screw-44](https://github.com/screw-44), [@StevenUST](https://github.com/StevenUST), [@opposj](https://github.com/opposj), [@ShijunLei-cn](https://github.com/ShijunLei-cn), [@algojogacor](https://github.com/algojogacor).
+
+</td>
+<td valign="top" width="40%">
+
+<img src="docs/aris-code-banner.png" width="100%" alt="ARIS-Code CLI terminal — Auto Research in Sleep">
+
+</td>
+</tr>
+</table>
+
 > <details><summary>Per-release details (v0.4.5 → v0.4.15)</summary>
 >
 > **v0.4.15** (2026-05-29) — OpenAI-compatible streaming robustness hotfix. Closes [#249](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/issues/249): MiniMax (and other OpenAI-compatible providers / proxies) were effectively unusable because the clean-EOF completion check treated the `data: [DONE]` SSE sentinel as the *only* authoritative signal. A non-empty `choices[].finish_reason` is the Chat Completions spec's terminal-chunk marker; `[DONE]` is a transport convention some compatible providers never emit (MiniMax sends `finish_reason: "stop"` then closes without `[DONE]`). The clean-EOF decision is now a pure, unit-tested `stream_eof_action(...)` that completes on EITHER `[DONE]` OR a non-empty `finish_reason`; reads are NOT stopped early at finish_reason (a trailing `include_usage` usage-only chunk is still consumed), genuine truncation still hard-errors, and a pre-output proxy abort still restarts. Coupled fixes: **OE7** reads finish_reason before the `delta` guard (delta-less terminal choice); **OE2** flushes pending tool calls on any non-empty finish_reason; **OE4** surfaces a mid-stream error envelope as a hard error instead of silently dropping it; **OE3** tolerates `data:{...}` without the space after the colon. +5 unit tests (77→82) extract the previously-untested SSE completion logic into pure helpers. Anthropic SSE path untouched. Codex MCP (gpt-5.5 xhigh) 3 rounds (GO-WITH-NITS → GO-WITH-NITS → GO).
@@ -89,8 +121,6 @@
 > **v0.1.0** (2026-04-02) — Initial release | Multi-executor & reviewer | 42 bundled skills
 >
 > </details>
-
-<img src="docs/aris-code-banner.png" width="600" alt="ARIS-Code CLI">
 
 ![ARIS Logo](docs/aris_logo.svg)
 
@@ -202,11 +232,14 @@ Two outputs: `PASTE_READY.txt` (exact char count, paste to venue) + `REBUTTAL_DR
 
 ## 2. 📢 What's New
 
+- **2026-05-31** — ![NEW](https://img.shields.io/badge/NEW-red?style=flat-square) 🤝 **Community spotlight — two tools worth a look.** [**Claude Fleet**](https://github.com/tianyilt/claude-fleet) ([@tianyilt](https://github.com/tianyilt)) — a local read-only dashboard to triage / Focus / full-text-search across many concurrent **Claude Code + Codex** windows. [**posterly**](https://github.com/Chenruishuo/posterly) ([@Chenruishuo](https://github.com/Chenruishuo)) — a Claude Code skill that builds academic conference posters as a single HTML/CSS file → print-ready PDF via headless Chromium (no LaTeX). Both indexed under [Awesome Community](#awesome-community-skills). 🌟 if they help you.
+- **2026-05-31** — ![NEW](https://img.shields.io/badge/NEW-red?style=flat-square) 🛰 **Fourth reviewer backend: Gemini via Antigravity CLI** ([#267](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/pull/267) by [@ZGJY95](https://github.com/ZGJY95)). `— reviewer: agy` routes review through the Antigravity CLI for users without Codex MCP / Oracle — **fail-closed on the cross-model invariant** (recovers + verifies the real Gemini-family model, refuses non-Gemini, binds the recovered transcript to the call via a user-event nonce). Wired into [`reviewer-routing.md`](skills/shared-references/reviewer-routing.md).
 - **2026-05-30** — ![NEW](https://img.shields.io/badge/NEW-red?style=flat-square) 🔒 **Self-modification now goes through a human + cross-model landing gate.** `/meta-optimize` is now a read-only proposer — it stages patches but no longer applies them. The new [`/meta-apply`](skills/meta-apply/SKILL.md) is the only skill that mutates the corpus: it runs a fresh cross-model jury on each staged diff *at landing* (reject-default — no human override of a KILL), then stamps provenance ([`provenance.py`](tools/provenance.py), author-family ≠ reviewer-family enforced on the stamp). An opt-in [`corpus_write_guard`](templates/claude-hooks/corpus_write_guard.json) PreToolUse hook denies Bash corpus writes (a blacklist / defense-in-depth, not a sandbox). Also newly wired: a deterministic evidence pre-check in [`/result-to-claim`](skills/result-to-claim/SKILL.md) that flags a cited number missing from its source file before the jury, and an anti-self-poisoning capture filter for the wiki + meta-optimize. **⚠️ Existing users**: `/meta-optimize apply` is removed — run `/meta-optimize` to stage, then `/meta-apply` to land.
 - **2026-05-29** — ![NEW](https://img.shields.io/badge/NEW-red?style=flat-square) ⚙️ **ultracode-native convention layer — fan out for breadth on any runtime tier, keep the cross-model jury sacred**. Three new [`shared-references`](skills/shared-references/) docs decouple *breadth* from *verdict*: [`fan-out-pattern.md`](skills/shared-references/fan-out-pattern.md) (skills generate candidates across same-family Claude subagents — Tier-1 Workflow / Tier-2 Agent / Tier-3 sequential — all ending in the *identical* cross-model jury), [`acceptance-gate.md`](skills/shared-references/acceptance-gate.md) ("a loop can DRIVE, it cannot ACQUIT" — self-judge execution-completeness, never quality/correctness), and [`external-cadence.md`](skills/shared-references/external-cadence.md) (`/loop` & `CronCreate` are fire-control, never a jury). Wired into `/idea-creator`, `/research-lit`, `/proof-checker`, `/kill-argument` (fan-out) plus 16 skills (cadence fence/affordance). Also stripped 48 vestigial `Agent` grants (least-privilege + a drift-check guard), fixed `/idea-creator`'s same-family idea pre-filter, and reconciled an `/auto-review-loop` `OR`→`AND` stop-condition inconsistency. **Non-ultracode users benefit immediately** — fan-out degrades to sequential with the same final jury.
-- **2026-05-28** — ![NEW](https://img.shields.io/badge/NEW-red?style=flat-square) 📝 **First blog shipped**: [A Survey on Continuous DLM (2026 H1, 6 papers)](https://wanshuiyin.github.io/ARIS-in-AI-Offer/blogs/continuous_dlm_2026h1_survey.html) — long-form bilingual technical survey by Ruofeng Yang (SJTU), written end-to-end through the ARIS-in-AI-Offer workflow (Claude Opus 4.7 + Codex GPT-5.5 xhigh + Gemini auto-gemini-3 cross-model discussion). Compares ELF, ByteDance Cola-DLM, and Flow-Matching family across discrete-DLM problems, the "known-unknown" continuous space idea, training pipeline, architecture / params / shapes, inference grids + Tab 6/7 numerical results, denoising trajectories, and a Field Landscape against Cola-DLM. Lives at [`docs/blogs/continuous_dlm_2026h1_survey.html`](docs/blogs/continuous_dlm_2026h1_survey.html) (1.7 MB self-contained, no build) — demonstrates the kind of long-form analysis the `/render-html` toolchain can produce.
 <details>
-<summary>Earlier updates (2026-03-12 — 2026-05-26, 68 entries)</summary>
+<summary>Earlier updates (2026-03-12 — 2026-05-28, 69 entries)</summary>
+
+- **2026-05-28** — ![NEW](https://img.shields.io/badge/NEW-red?style=flat-square) 📝 **First blog shipped**: [A Survey on Continuous DLM (2026 H1, 6 papers)](https://wanshuiyin.github.io/ARIS-in-AI-Offer/blogs/continuous_dlm_2026h1_survey.html) — long-form bilingual technical survey by Ruofeng Yang (SJTU), written end-to-end through the ARIS-in-AI-Offer workflow (Claude Opus 4.7 + Codex GPT-5.5 xhigh + Gemini auto-gemini-3 cross-model discussion). Compares ELF, ByteDance Cola-DLM, and Flow-Matching family across discrete-DLM problems, the "known-unknown" continuous space idea, training pipeline, architecture / params / shapes, inference grids + Tab 6/7 numerical results, denoising trajectories, and a Field Landscape against Cola-DLM. Lives at [`docs/blogs/continuous_dlm_2026h1_survey.html`](docs/blogs/continuous_dlm_2026h1_survey.html) (1.7 MB self-contained, no build) — demonstrates the kind of long-form analysis the `/render-html` toolchain can produce.
 
 - **2026-05-26** — ![NEW](https://img.shields.io/badge/NEW-red?style=flat-square) 🌐 **HTML auto-emission activated at 8 workflow checkpoints**. `/idea-discovery`, `/auto-review-loop`, `/research-pipeline`, `/kill-argument`, `/proof-checker`, `/paper-claim-audit`, `/citation-audit`, `/rebuttal` now auto-render their primary MD artifact to a single-file HTML view via [`/render-html`](skills/render-html/SKILL.md). Cost-tiered: interim views use `--no-review`, audit-class / reviewer-facing deliverables keep the full Codex render-fidelity gate. Default on (`RENDER_HTML = true`); per-skill opt-out. Failures non-blocking — source MD stays canonical.
 - **2026-05-26** — ![NEW](https://img.shields.io/badge/NEW-red?style=flat-square) 🤝 **Community PR wave — 5 merges this week**. [`/wiki-enrich`](skills/wiki-enrich/SKILL.md) ([#247](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/pull/247) by [@hungchun0201](https://github.com/hungchun0201)) fills paper TODOs `ingest_paper` leaves as scaffolds — Karpathy LLM-wiki principle, fetch chain alphaxiv→deepxiv→arXiv. [Mirror drift checker + CI](tools/check_skills_inventory.py) ([#241](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/pull/241) by [@VeraPyuyi](https://github.com/VeraPyuyi)) keeps main↔mirror in sync. `/research-pipeline` Stage 2/3 unified into `/experiment-bridge` delegation ([#243](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/pull/243) by [@ZBigFish](https://github.com/ZBigFish)) — old inline was a strict subset of the bridge. Windows PowerShell installer parity with reparse-chain inside-repo guard + `-FromOld` legacy migration + Windows CI matrix ([#242](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/pull/242) by [@VeraPyuyi](https://github.com/VeraPyuyi)). Plus [`manual-review` MCP](mcp-servers/manual-review/README.md) ([#246](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/pull/246) by [@ZBigFish](https://github.com/ZBigFish)) — **third reviewer backend `— reviewer: manual`** for zero-cost cross-model review (paste prompt to any non-Claude model: DeepSeek / Kimi / ChatGPT / Gemini / local llama); cross-model invariant guarded by bilingual UI banner + per-session token auth + fail-closed when MCP unavailable.
@@ -538,7 +571,7 @@ Domain-specific skills and external projects contributed by the community. PRs w
 
 🎉 **Community Skills (13):** [research-refine](skills/research-refine/SKILL.md) · [experiment-plan](skills/experiment-plan/SKILL.md) · [grant-proposal](skills/grant-proposal/SKILL.md) · [paper-poster](skills/paper-poster/SKILL.md) · [paper-slides](skills/paper-slides/SKILL.md) · [mermaid-diagram](skills/mermaid-diagram/SKILL.md) · [proof-writer](skills/proof-writer/SKILL.md) · [comm-lit-review](skills/comm-lit-review/SKILL.md) · [dse-loop](skills/dse-loop/SKILL.md) · [idea-discovery-robot](skills/idea-discovery-robot/SKILL.md) · [formula-derivation](skills/formula-derivation/SKILL.md) · [paper-illustration](skills/paper-illustration/SKILL.md) · [writing-systems-papers](skills/writing-systems-papers/SKILL.md)
 
-🌐 **External Projects & Docs (13):** [rosetta](https://github.com/SyntaxSmith/rosetta) · [open-source-hardening-skills](https://github.com/zeyuzhangzyz/open-source-hardening-skills) · [CitationClaw](https://github.com/VisionXLab/CitationClaw) · [auto-hparam-tuning](https://github.com/zxh0916/auto-hparam-tuning) · [paper-to-course](https://github.com/KaguraTart/paper-to-course) · [deep-research-skills](https://github.com/Weizhena/deep-research-skills) · [Antigravity Adaptation Guide](docs/ANTIGRAVITY_ADAPTATION.md) · [OpenClaw Adaptation Guide](docs/OPENCLAW_ADAPTATION.md) · [Cursor Adaptation Guide](docs/CURSOR_ADAPTATION.md) · [Codex+Claude Review Bridge](docs/CODEX_CLAUDE_REVIEW_GUIDE.md) · [Trae Adaptation Guide](docs/TRAE_ARIS_RUNBOOK_EN.md) · [paper-illustration](skills/paper-illustration/SKILL.md) · [MiniMax-AI/cli](https://github.com/MiniMax-AI/cli)
+🌐 **External Projects & Docs (15):** [rosetta](https://github.com/SyntaxSmith/rosetta) · [open-source-hardening-skills](https://github.com/zeyuzhangzyz/open-source-hardening-skills) · [CitationClaw](https://github.com/VisionXLab/CitationClaw) · [auto-hparam-tuning](https://github.com/zxh0916/auto-hparam-tuning) · [paper-to-course](https://github.com/KaguraTart/paper-to-course) · [deep-research-skills](https://github.com/Weizhena/deep-research-skills) · [Antigravity Adaptation Guide](docs/ANTIGRAVITY_ADAPTATION.md) · [OpenClaw Adaptation Guide](docs/OPENCLAW_ADAPTATION.md) · [Cursor Adaptation Guide](docs/CURSOR_ADAPTATION.md) · [Codex+Claude Review Bridge](docs/CODEX_CLAUDE_REVIEW_GUIDE.md) · [Trae Adaptation Guide](docs/TRAE_ARIS_RUNBOOK_EN.md) · [paper-illustration](skills/paper-illustration/SKILL.md) · [MiniMax-AI/cli](https://github.com/MiniMax-AI/cli) · [posterly](https://github.com/Chenruishuo/posterly) · [Claude Fleet](https://github.com/tianyilt/claude-fleet)
 
 > 🙌 Thanks to every contributor! We fold the tables below to keep the README readable — but every skill and project here is equally valued. PRs always welcome!
 
@@ -564,7 +597,7 @@ Domain-specific skills and external projects contributed by the community. PRs w
 </details>
 
 <details>
-<summary><b>🌐 External Projects & Docs (13)</b> — click to expand</summary>
+<summary><b>🌐 External Projects & Docs (15)</b> — click to expand</summary>
 
 | Name | Domain | Description |
 |------|--------|-------------|
@@ -582,6 +615,8 @@ Domain-specific skills and external projects contributed by the community. PRs w
 | 📚 [paper-to-course](https://github.com/KaguraTart/paper-to-course) | Education | Convert research papers (PDF/LaTeX) into interactive six-module HTML courses with formula breakdowns, literature timelines, quizzes, and glossary tooltips — single bundled file, no server needed |
 | 🤖 [MiniMax-AI/cli](https://github.com/MiniMax-AI/cli) | General | Official MiniMax CLI — text, image, video, speech, and music generation + web search. `skill/SKILL.md` follows the agentskills.io standard. Drop-in companion for the Alt B (MiniMax reviewer) setup |
 | 🔎 [deep-research-skills](https://github.com/Weizhena/deep-research-skills) | General / Web Search | Modular web-search strategy bundle — per-source playbooks for Stack Overflow, GitHub Issues / error-string debugging, Chinese tech communities (CSDN / 掘金 / 知乎 / V2EX / Tencent + Aliyun cloud forums), and general web (Reddit / HN / Dev.to / Medium). Complements ARIS's academic-paper-focused [`/research-lit`](skills/research-lit/SKILL.md) stack with **non-academic** sources useful for debugging, version-compat tracking, and Chinese-language tech search. By [@Weizhena](https://github.com/Weizhena) |
+| 🖼️ [posterly](https://github.com/Chenruishuo/posterly) | General / Posters | Academic conference posters as a single **HTML/CSS file → print-ready PDF** via headless Chromium (no LaTeX). A Claude Code skill — a lightweight, web-native alternative to `/paper-poster`. By [@Chenruishuo](https://github.com/Chenruishuo) |
+| 🛰️ [Claude Fleet](https://github.com/tianyilt/claude-fleet) | Dashboard / DevEx | Local **read-only** dashboard for many concurrent Claude Code / Codex windows — triage (working / waiting-on-you / done), one-click Focus, ~50ms full-text search across transcripts, skill/memory analytics. By [@tianyilt](https://github.com/tianyilt) |
 
 </details>
 
