@@ -7,10 +7,12 @@ The most important point is simple:
 - `nature-skills` is **not** a Python package or npm package
 - each `skills/nature-*` folder is one reusable skill unit
 - in most cases, you should copy or reference the **entire folder**, not only `SKILL.md`
+- `skills/_shared/` is shared support content for several router-style skills
 
 Why that matters:
 
 - many skills depend on `references/`
+- newer router-style skills may depend on `static/`, `manifest.yaml`, and `../_shared`
 - some skills also use `README.md` as supporting context
 - copying only `SKILL.md` can silently break the workflow
 
@@ -19,31 +21,39 @@ Why that matters:
 ## 1. What gets installed
 
 Each installable skill lives under `skills/` and is centred on `SKILL.md`.
-Some also include `README.md`, `references/`, assets, scripts, or eval files.
+Some also include `README.md`, `manifest.yaml`, `static/`, `references/`,
+assets, scripts, or eval files.
 
 Typical examples:
 
 ```text
-skills/nature-<topic>/
-├── SKILL.md
-├── README.md              # common, but not guaranteed
-├── references/            # present for some skills
-└── ...
+skills/
+├── _shared/               # shared support files used by some skills
+└── nature-<topic>/
+    ├── SKILL.md
+    ├── README.md          # common, but not guaranteed
+    ├── manifest.yaml      # present for router-style skills
+    ├── static/            # present for router-style skills
+    ├── references/        # present for many skills
+    └── ...
 ```
 
 Examples in this repository:
 
-- `nature-polishing`
-- `nature-writing`
-- `nature-figure`
+- `nature-academic-search`
 - `nature-citation`
 - `nature-data`
-- `nature-reader`
+- `nature-figure`
 - `nature-paper2ppt`
+- `nature-polishing`
+- `nature-reader`
 - `nature-response`
+- `nature-reviewer`
+- `nature-writing`
 
 If you want one skill, install one folder.
-If you want the full collection, install all `skills/nature-*` folders.
+If you want the full collection, install `skills/_shared` plus all
+`skills/nature-*` folders.
 
 ---
 
@@ -51,7 +61,8 @@ If you want the full collection, install all `skills/nature-*` folders.
 
 Choose the path that matches your agent:
 
-- **Codex**: best if you want native skill-folder loading
+- **Codex plugin marketplace**: best if you want the packaged bundle
+- **Codex local skills**: best if you want direct folder copying
 - **Claude Code**: best if you want terminal-based agent workflows, but you need a thin wrapper because Claude Code does not natively consume Codex-style skill folders
 - **Other agents**: use the whole skill folder as a reusable prompt bundle
 
@@ -59,34 +70,53 @@ Choose the path that matches your agent:
 
 ## 3. Install for Codex
 
-Codex is the cleanest target for this repository because it can use local skill folders directly.
+Codex is the cleanest target for this repository because it can use the packaged
+plugin or local skill folders directly.
 
-### 3.1 Clone the repository
+### 3.1 Plugin marketplace installation
+
+```bash
+codex plugin marketplace add https://github.com/Yuan1z0825/nature-skills --ref main
+codex plugin add nature-skills@nature-skills
+```
+
+After installation, start a new Codex session if the new skills do not appear
+immediately. The plugin package contains all `nature-*` skills and the shared
+support files they reference.
+
+### 3.2 Manual local-skill installation
+
+Clone the repository:
 
 ```bash
 git clone https://github.com/Yuan1z0825/nature-skills.git
 cd nature-skills
 ```
 
-### 3.2 Install one skill
+### 3.3 Install one skill
 
 Example: install `nature-polishing`
 
 ```bash
 mkdir -p ~/.codex/skills
+cp -R skills/_shared ~/.codex/skills/
 cp -R skills/nature-polishing ~/.codex/skills/
 ```
 
-### 3.3 Install all current skills
+Copying `_shared` is harmless even when the selected skill does not use it, and
+it prevents broken relative references for skills that do.
+
+### 3.4 Install all current skills
 
 ```bash
 mkdir -p ~/.codex/skills
+cp -R skills/_shared ~/.codex/skills/
 for d in skills/nature-*; do
   cp -R "$d" ~/.codex/skills/
 done
 ```
 
-### 3.4 Verify
+### 3.5 Verify
 
 Start a fresh Codex session and ask for a task that clearly matches the skill, for example:
 
@@ -102,19 +132,21 @@ Turn this paper into a Chinese journal-club PPT.
 
 If the installed skill is discovered correctly, Codex should use the skill-specific workflow instead of answering with a generic one-shot response.
 
-### 3.5 Update later
+### 3.6 Update later
 
 When this repository changes:
 
 ```bash
 cd /path/to/nature-skills
 git pull
+cp -R skills/_shared ~/.codex/skills/
 cp -R skills/nature-polishing ~/.codex/skills/
 ```
 
-If you installed all skills, re-copy all `skills/nature-*` folders after pulling.
+If you installed all skills, re-copy `skills/_shared` and all `skills/nature-*`
+folders after pulling.
 
-### 3.6 Common Codex mistake
+### 3.7 Common Codex mistake
 
 Do **not** do this:
 
@@ -127,6 +159,7 @@ That copies only one file and drops the rest of the skill bundle.
 Use this instead:
 
 ```bash
+cp -R skills/_shared ~/.codex/skills/
 cp -R skills/nature-polishing ~/.codex/skills/
 ```
 
@@ -192,7 +225,8 @@ description: Use proactively for Nature-style academic polishing, restructuring,
 When invoked, first read `~/ai-skills/nature-skills/skills/nature-polishing/SKILL.md`.
 Treat that file as the governing workflow.
 If the skill references supporting files, read only the specific files you need from
-`~/ai-skills/nature-skills/skills/nature-polishing/`.
+`~/ai-skills/nature-skills/skills/nature-polishing/` and
+`~/ai-skills/nature-skills/skills/_shared/`.
 Do not replace the skill with a generic polishing response.
 EOF
 ```
@@ -239,11 +273,16 @@ Keeping the repo cloned and pointing Claude Code at the real folder is more robu
 
 Repeat the same pattern for other folders:
 
+- `nature-academic-search`
 - `nature-figure`
 - `nature-citation`
 - `nature-data`
 - `nature-reader`
 - `nature-paper2ppt`
+- `nature-polishing`
+- `nature-response`
+- `nature-reviewer`
+- `nature-writing`
 
 For example, a `nature-paper2ppt` wrapper should point to:
 
@@ -273,17 +312,22 @@ If your wrapper points to this stable clone path, no further reinstall step is n
 If your agent supports reusable prompt folders, profile files, or custom system prompts, use the real skill directory under `skills/` as the portable unit:
 
 ```text
-skills/nature-<topic>/
-├── SKILL.md
-├── README.md              # common, but not guaranteed
-├── references/            # present for some skills
-└── ...
+skills/
+├── _shared/
+└── nature-<topic>/
+    ├── SKILL.md
+    ├── README.md
+    ├── manifest.yaml
+    ├── static/
+    ├── references/
+    └── ...
 ```
 
 Recommended rule:
 
 1. copy the full skill directory
-2. preserve `SKILL.md` and `references/` together
+2. preserve `SKILL.md`, `manifest.yaml`, `static/`, `references/`, scripts,
+   assets, and any needed `skills/_shared/` files together
 3. adapt only the outer wrapper format required by the target agent
 
 ---
@@ -292,8 +336,8 @@ Recommended rule:
 
 ### Use Codex if:
 
-- you want the most direct installation path
-- you want to copy folders into `~/.codex/skills/` and use them immediately
+- you want the packaged plugin marketplace path
+- you want to copy folders into `~/.codex/skills/` and use them directly
 
 ### Use Claude Code if:
 
@@ -314,6 +358,7 @@ Recommended rule:
 Check:
 
 - did you install the full `skills/nature-*` folder rather than only `SKILL.md`?
+- did you also install `skills/_shared` if the skill references `../_shared`?
 - did you start a fresh session after installation?
 - are you asking for a task that clearly matches the skill?
 
@@ -335,7 +380,8 @@ git pull
 
 Then:
 
-- for Codex, copy the updated folder(s) again
+- for Codex local skills, copy `skills/_shared` and the updated folder(s) again
+- for Codex plugin installation, run `codex plugin marketplace upgrade` and reinstall or refresh the plugin as needed
 - for Claude Code wrappers, no reinstall is needed if the wrapper still points to the same clone path
 
 ---
@@ -348,6 +394,7 @@ Then:
 git clone https://github.com/Yuan1z0825/nature-skills.git
 cd nature-skills
 mkdir -p ~/.codex/skills
+cp -R skills/_shared ~/.codex/skills/
 cp -R skills/nature-polishing ~/.codex/skills/
 ```
 
@@ -357,6 +404,7 @@ cp -R skills/nature-polishing ~/.codex/skills/
 git clone https://github.com/Yuan1z0825/nature-skills.git
 cd nature-skills
 mkdir -p ~/.codex/skills
+cp -R skills/_shared ~/.codex/skills/
 for d in skills/nature-*; do
   cp -R "$d" ~/.codex/skills/
 done
@@ -379,7 +427,8 @@ description: Use proactively for Nature-style academic polishing, restructuring,
 When invoked, first read `~/ai-skills/nature-skills/skills/nature-polishing/SKILL.md`.
 Treat that file as the governing workflow.
 If the skill references supporting files, read only the specific files you need from
-`~/ai-skills/nature-skills/skills/nature-polishing/`.
+`~/ai-skills/nature-skills/skills/nature-polishing/` and
+`~/ai-skills/nature-skills/skills/_shared/`.
 EOF
 ```
 

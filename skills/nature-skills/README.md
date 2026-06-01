@@ -29,33 +29,40 @@ Hello everyone, I’m Yuan Yizhe, a PhD student at Shanghai Jiao Tong University
 
 `nature-skills` is a repository of reusable instruction bundles centred on `SKILL.md`.
 Each `skills/nature-*` directory is one installable unit. Copy the whole folder, not
-only `SKILL.md`, because many skills depend on `references/`, assets, scripts, or
-README context.
+only `SKILL.md`, because many skills depend on `references/`, `static/`, assets,
+scripts, or README context. The `skills/_shared/` directory is shared support
+content used by several skills and should stay next to the `nature-*` folders
+when you install skills manually.
 
 ### 1. Codex
 
-**Codex Desktop plugin marketplace installation**
+**Codex plugin marketplace installation**
 
-This repository also includes Codex plugin packaging, so Codex Desktop users can
-install the complete Nature Skills bundle from the plugin marketplace instead of
-copying each skill folder manually.
+This repository includes Codex plugin packaging at `plugins/nature-skills/`, so
+Codex users can install the complete Nature Skills bundle from the plugin
+marketplace instead of copying each skill folder manually.
 
-1. Open Codex Desktop and add a custom plugin marketplace.
-2. Use the marketplace source repository:
-   `https://github.com/Yuan1z0825/nature-skills.git`
-3. Use the branch/ref:
-   `main`
-4. Install the `nature-skills` plugin from that marketplace.
-5. The plugin skills should appear automatically after installation. If they do
-   not, refresh the plugin page or start a new Codex session.
+CLI installation:
+
+```bash
+codex plugin marketplace add https://github.com/Yuan1z0825/nature-skills --ref main
+codex plugin add nature-skills@nature-skills
+```
+
+Codex Desktop users can add the same repository as a custom plugin marketplace:
+
+- Marketplace source: `https://github.com/Yuan1z0825/nature-skills.git`
+- Branch/ref: `main`
+- Plugin: `nature-skills`
 
 After installation, all `nature-*` skills are available through the plugin as a
-complete bundle. API users should use
-[BigPizzaV3/CodexPlusPlus](https://github.com/BigPizzaV3/CodexPlusPlus).
+complete bundle, together with the shared support directory used by the newer
+router-style skills. If the skills do not appear immediately, refresh the plugin
+page or start a new Codex session.
 
 **Manual local-skill installation**
 
-Codex can use these folders directly as local skills. This is the simplest installation path.
+Codex can also use these folders directly as local skills.
 
 **Clone the repo**
 
@@ -68,13 +75,19 @@ cd nature-skills
 
 ```bash
 mkdir -p ~/.codex/skills
+cp -R skills/_shared ~/.codex/skills/
 cp -R skills/nature-reader ~/.codex/skills/
 ```
+
+Copying `_shared` is harmless even for skills that do not use it, and it avoids
+broken relative references for skills such as `nature-reader`, `nature-writing`,
+`nature-polishing`, and `nature-paper2ppt`.
 
 **Install all current skills**
 
 ```bash
 mkdir -p ~/.codex/skills
+cp -R skills/_shared ~/.codex/skills/
 for d in skills/nature-*; do
   cp -R "$d" ~/.codex/skills/
 done
@@ -84,6 +97,7 @@ done
 
 ```bash
 git pull
+cp -R skills/_shared ~/.codex/skills/
 for d in skills/nature-*; do
   cp -R "$d" ~/.codex/skills/
 done
@@ -96,56 +110,51 @@ done
   `Make this paper into a Chinese journal-club PPT.`
 
 If you prefer not to use the terminal, copying the `skills/nature-*` folder(s) into
-`~/.codex/skills/` manually works as well. For a longer walkthrough, see
-[`install.md`](install.md).
+`~/.codex/skills/` manually works as well; also copy `skills/_shared/` once. For
+a longer walkthrough, see [`install.md`](install.md).
 
 ### 2. Claude Code
 
-**Primary method: Plugin marketplace installation**
-
-This repository is published as a Claude Code plugin, making installation simple.
+Claude Code does not consume Codex skill folders directly. The recommended
+Claude Code setup is a thin subagent or slash-command wrapper that points to a
+stable clone of this repository, so supporting files such as `references/`,
+`static/`, assets, scripts, and `skills/_shared/` remain available.
 
 ```bash
-# Add the marketplace (one-time)
-/plugin marketplace add https://github.com/Yuan1z0825/nature-skills
-
-# Install the plugin
-/plugin install nature-skills
-
-# Reload to apply
-/reload-plugins
+mkdir -p ~/ai-skills
+cd ~/ai-skills
+git clone https://github.com/Yuan1z0825/nature-skills.git
 ```
 
-All nine skills are available automatically after reload. No manual wrapper setup needed.
-
-**Alternative: subagent wrapper**
-
-If you prefer manual control over individual skills, create a user-level subagent:
+Create a user-level subagent wrapper:
 
 ```bash
 mkdir -p ~/.claude/agents
-cp skills/nature-reader/SKILL.md ~/.claude/agents/nature-reader.md
-```
-
-Then open `~/.claude/agents/nature-reader.md` and make sure the frontmatter is valid
-for Claude Code subagents:
-
-```yaml
+cat > ~/.claude/agents/nature-reader.md <<'EOF'
 ---
 name: nature-reader
 description: Full-paper bilingual, figure-aware, source-grounded Markdown reader for journal or conference papers. Use proactively when the user asks to translate an entire paper or generate a complete markdown reader.
 ---
+
+When invoked, first read `~/ai-skills/nature-skills/skills/nature-reader/SKILL.md`.
+Treat that file as the governing workflow.
+If the skill references supporting files, read only the specific files you need from
+`~/ai-skills/nature-skills/skills/nature-reader/` and
+`~/ai-skills/nature-skills/skills/_shared/`.
+Do not replace the skill with a generic paper-summary response.
+EOF
 ```
 
-After that, start a new Claude Code session or open `/agents`, and invoke it naturally or explicitly:
+After that, start a new Claude Code session or open `/agents`, and invoke it
+naturally or explicitly:
 
 ```text
 Use the nature-reader subagent to turn this PDF into a full markdown reader.
 ```
 
 If you prefer commands instead of subagents, create a project or user command under
-`.claude/commands/` or `~/.claude/commands/` and paste or adapt the corresponding
-`SKILL.md` content there.
+`.claude/commands/` or `~/.claude/commands/` that tells Claude Code to read the
+real `SKILL.md` from the cloned repository.
 
 Official Claude Code docs:
 
@@ -158,21 +167,26 @@ If your agent supports reusable prompt files, system prompts, or agent profiles,
 portable unit is the skill directory itself:
 
 ```text
-skills/nature-<topic>/
-├── README.md
-├── SKILL.md
-└── references/...
+skills/
+├── _shared/              # keep this when a skill references ../_shared
+└── nature-<topic>/
+    ├── README.md
+    ├── SKILL.md
+    ├── manifest.yaml     # present for router-style skills
+    ├── static/           # present for router-style skills
+    └── references/...
 ```
 
 In that case:
 
 1. Copy the whole skill directory into your prompt library or project.
-2. Preserve `SKILL.md` and any `references/` files together.
+2. Preserve `SKILL.md`, `manifest.yaml`, `static/`, `references/`, scripts, assets,
+   and any needed `skills/_shared/` files together.
 3. Adapt the frontmatter and body to the target agent's native format if needed.
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Yuan1z0825/nature-skills&type=Date&cache_bust=2026-05-28T04)](https://star-history.com/#Yuan1z0825/nature-skills&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=Yuan1z0825/nature-skills&type=Date&cache_bust=2026-05-31T05)](https://star-history.com/#Yuan1z0825/nature-skills&Date)
 
 
 ## Skill index
@@ -182,6 +196,7 @@ In that case:
 | [`nature-figure`](skills/nature-figure/README.md) | Stable | Nature/high-impact Python or R figure workflow with bundled figures4papers demos | "Nature figure", "publication plot", "scientific figure", "figures4papers" |
 | [`nature-polishing`](skills/nature-polishing/README.md) | Stable | Academic prose polishing to *Nature* style | "Nature style", "polish", "academic writing" |
 | [`nature-writing`](skills/nature-writing/README.md) | Draft | Nature-style manuscript section drafting and argument restructuring | "Nature writing", "write abstract", "write introduction", "manuscript draft" |
+| [`nature-reviewer`](skills/nature-reviewer/README.md) | Draft | Nature-style reviewer assessment with 3 referee reports and a cross-review synthesis | "Nature reviewer", "pre-submission review", "reviewer report", "peer-review critique", "审稿人视角评估" |
 | [`nature-citation`](skills/nature-citation/README.md) | Beta | Strict Nature / CNS-family citation retrieval with ENW, RIS, and Zotero RDF export | "Nature citation", "CNS citation", "text citation", "supporting references", "Zotero RDF" |
 | [`nature-data`](skills/nature-data/README.md) | Draft | Nature Data Availability statements, repository plans, and FAIR checks | "Data Availability", "repository", "FAIR metadata", "data availability statement" |
 | [`nature-reader`](skills/nature-reader/README.md) | Beta | Full-paper bilingual Markdown reader with source anchors and figure grounding | "nature reader", "full markdown", "paper md", "原文对照", "图文对应", "全文翻译" |
@@ -235,6 +250,8 @@ The figures4papers demo scripts and preview assets are bundled inside
 skills/nature-figure/
 ├── README.md
 ├── SKILL.md
+├── manifest.yaml
+├── static/
 └── references/
     ├── api.md            PALETTE, helper signatures, validation rules
     ├── design-theory.md  Typography, layout, export policy, anti-redundancy rules
@@ -283,7 +300,10 @@ Proofreading → Plain-text output
 skills/nature-polishing/
 ├── README.md
 ├── SKILL.md
+├── manifest.yaml
+├── static/
 └── references/
+    ├── latex-layout.md
     ├── published-article-patterns.md
     ├── phrasebank-playbook.md
     ├── section-moves.md
@@ -327,6 +347,8 @@ paper review.
 skills/nature-writing/
 ├── README.md
 ├── SKILL.md
+├── manifest.yaml
+├── static/
 ├── agents/
 │   └── openai.yaml
 └── references/
@@ -341,6 +363,40 @@ skills/nature-writing/
     ├── paragraph-flow.md
     ├── related-work.md
     └── examples/
+```
+
+---
+
+## nature-reviewer
+
+**What it does** — Simulates a Nature-style pre-submission reviewer assessment
+from the referee perspective. It returns three reviewer reports plus a
+cross-review synthesis, focusing on novelty, significance, technical soundness,
+presentation, and likely editorial risk.
+
+**Key rules enforced**
+
+| Domain | Core rule |
+|--------|-----------|
+| Reviewer role | Assess as external referees, not as an author rebuttal writer |
+| Evidence grounding | Use only the manuscript/material supplied by the user and the local reviewer source basis |
+| Multi-reviewer output | Produce three distinct reviewer reports plus a synthesis |
+| Editorial relevance | Separate novelty, significance, technical confidence, presentation, and decision risk |
+| Boundaries | Do not invent experiments, citations, journal policy, or manuscript content |
+
+**Reference files**
+
+```text
+skills/nature-reviewer/
+├── README.md
+├── SKILL.md
+└── references/
+    ├── source-basis.md
+    ├── reviewer-workflow.md
+    ├── review-axes.md
+    ├── report-structure.md
+    ├── role-boundaries.md
+    └── qa-checklist.md
 ```
 
 ---
@@ -372,9 +428,12 @@ for Nature Portfolio, the AAAS Science family, and Cell Press.
 skills/nature-citation/
 ├── README.md
 ├── SKILL.md
+├── manifest.yaml
+├── static/
 ├── references/
 │   ├── journal-scope.md
 │   ├── ris-endnote.md
+│   ├── script-usage.md
 │   └── search-strategy.md
 └── scripts/
     └── nature_citation.py
@@ -414,6 +473,8 @@ metadata conventions.
 skills/nature-data/
 ├── README.md
 ├── SKILL.md
+├── manifest.yaml
+├── static/
 ├── agents/
 │   └── openai.yaml
 └── references/
@@ -455,6 +516,8 @@ instructions, Springer Nature rebuttal advice, and transparent peer-review consi
 skills/nature-response/
 ├── README.md
 ├── SKILL.md
+├── manifest.yaml
+├── static/
 ├── references/
 │   ├── action-mapping.md
 │   ├── chinese-author-alignment.md
@@ -507,7 +570,13 @@ and speaker notes, creates the actual PPTX deck, and runs lightweight package QA
 ```
 skills/nature-paper2ppt/
 ├── README.md
-└── SKILL.md
+├── SKILL.md
+├── manifest.yaml
+├── static/
+└── references/
+    ├── design-and-layout.md
+    ├── figure-assets.md
+    └── self-review.md
 ```
 
 ---
@@ -556,6 +625,8 @@ copy the whole `skills/nature-academic-search/` directory like the other skills.
 skills/nature-academic-search/
 ├── README.md
 ├── SKILL.md
+├── manifest.yaml
+├── static/
 ├── install.sh
 ├── config/
 │   ├── mcp-snippet.json
@@ -655,8 +726,6 @@ The following are documented gaps. Contributions welcome.
 | `nature-stats` | Statistical reporting conventions for *Nature* (effect sizes, confidence intervals, p-value formatting, sample size statements) | High |
 | `nature-methods` | Deep-dive Methods writing assistant — reproducibility checklist, forbidden phrases, ethical approval templates, supplementary organisation | Medium |
 | `nature-cover` | Cover letter drafting — hook paragraph, significance framing, fit-to-journal argument, ≤ 500-word limit | Medium |
-| `nature-review` | Writing a literature review or review article in *Nature Reviews* style — synthesis vs. summary, argument-led structure | Low |
-
 
 
 ## ☕ 如果内容对你有帮助，欢迎随缘支持一下
