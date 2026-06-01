@@ -1,9 +1,13 @@
-﻿name: Sync skills
+name: Sync skills
 
 on:
   workflow_dispatch:
   schedule:
     - cron: "17 3 * * *"
+
+concurrency:
+  group: sync-skills
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -16,6 +20,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
