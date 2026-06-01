@@ -1,0 +1,128 @@
+example: "jeem_dynamic_writing_skill_mvp_anonymized"
+target_journal: "Journal of Environmental Economics and Management"
+manuscript_description: "Anonymized working paper; topic, model details, results, and author information redacted"
+static_base_skill: "none in public sample; user may optionally add one"
+user_lab_exemplars: "none"
+privacy_status: "anonymized_public_example"
+
+conversion_policy:
+  accepted_input: "fully readable converted text"
+  partial_conversion: "retry_or_replace"
+  failed_conversion: "retry_or_replace"
+  note: "Partial and failed conversions do not enter Phase 1."
+
+primary_corpus:
+  role: "target_journal"
+  journal: "Journal of Environmental Economics and Management"
+  paper_count_used_in_mvp: 6
+  public_description: "JEEM papers related to environmental policy instruments, distributional analysis, welfare criteria, and policy design."
+  papers:
+    - id: "jeem_001"
+      year: 2011
+      journal: "Journal of Environmental Economics and Management"
+      title: "Do you not like Pigou, or do you not understand him? Tax aversion and revenue recycling in the lab"
+      role: "primary_target_journal"
+      conversion_status: "full_text_readable"
+    - id: "jeem_002"
+      year: 2012
+      journal: "Journal of Environmental Economics and Management"
+      title: "Tax-versus-trading and efficient revenue recycling as issues for greenhouse gas abatement"
+      role: "primary_target_journal"
+      conversion_status: "full_text_readable"
+    - id: "jeem_003"
+      year: 2019
+      journal: "Journal of Environmental Economics and Management"
+      title: "Redistribution and pollution taxes with non-linear Engel curves"
+      role: "primary_target_journal"
+      conversion_status: "full_text_readable"
+    - id: "jeem_004"
+      year: 2021
+      journal: "Journal of Environmental Economics and Management"
+      title: "The social cost of carbon and inequality: When local redistribution shapes global carbon prices"
+      role: "primary_target_journal"
+      conversion_status: "full_text_readable"
+    - id: "jeem_005"
+      year: 2022
+      journal: "Journal of Environmental Economics and Management"
+      title: "Optimal carbon taxation and horizontal equity: A welfare-theoretic approach with application to German household data"
+      role: "primary_target_journal"
+      conversion_status: "full_text_readable"
+    - id: "jeem_006"
+      year: 2025
+      journal: "Journal of Environmental Economics and Management"
+      title: "Why green subsidies are preferred to carbon taxes: Climate policy with heightened carbon tax salience"
+      role: "primary_target_journal"
+      conversion_status: "full_text_readable"
+
+secondary_corpus:
+  role: "optional_field_or_topic_support"
+  paper_count_used_in_mvp: 9
+  public_description: "Field-relevant papers from environmental economics, climate economics, public economics, and climate-policy journals."
+  rule: "Secondary-corpus patterns support interpretation but do not override reviewed JEEM patterns."
+  papers:
+    - id: "secondary_001"
+      year: 2024
+      journal: "Nature Climate Change"
+      title: "A multi-model assessment of inequality and climate change"
+      role: "secondary_field_or_topic_support"
+      conversion_status: "full_text_readable"
+    - id: "secondary_002"
+      year: 2023
+      journal: "Environmental and Resource Economics"
+      title: "The Impacts of Removing Fossil Fuel Subsidies and Increasing Carbon Taxation in Ireland"
+      role: "secondary_field_or_topic_support"
+      conversion_status: "full_text_readable"
+    - id: "secondary_003"
+      year: 2025
+      journal: "Environmental and Resource Economics"
+      title: "Designing Carbon Pricing Policies Across the Globe"
+      role: "secondary_field_or_topic_support"
+      conversion_status: "full_text_readable"
+    - id: "secondary_004"
+      year: 2015
+      journal: "Resource and Energy Economics"
+      title: "Carbon tax and revenue recycling: Impacts on households in British Columbia"
+      role: "secondary_field_or_topic_support"
+      conversion_status: "full_text_readable"
+    - id: "secondary_005"
+      year: 2019
+      journal: "Journal of the Association of Environmental and Resource Economists"
+      title: "Inequality and the Social Cost of Carbon"
+      role: "secondary_field_or_topic_support"
+      conversion_status: "full_text_readable"
+    - id: "secondary_006"
+      year: 2024
+      journal: "Journal of the Association of Environmental and Resource Economists"
+      title: "Spatial Microsimulation of Carbon Tax Incidence: An Application to Washington State"
+      role: "secondary_field_or_topic_support"
+      conversion_status: "full_text_readable"
+    - id: "secondary_007"
+      year: 2017
+      journal: "Environmental and Resource Economics"
+      title: "Green Taxes in a Post-Paris World: Are Millions of Nays Inevitable?"
+      role: "secondary_field_or_topic_support"
+      conversion_status: "full_text_readable"
+    - id: "secondary_008"
+      year: 2021
+      journal: "Environmental and Resource Economics"
+      title: "Distributional Impacts of Carbon Pricing: A Meta-Analysis"
+      role: "secondary_field_or_topic_support"
+      conversion_status: "full_text_readable"
+    - id: "secondary_009"
+      year: 2018
+      journal: "Nature Climate Change"
+      title: "Making carbon pricing work for citizens"
+      role: "secondary_field_or_topic_support"
+      conversion_status: "full_text_readable"
+
+outputs:
+  - conversion_report.md
+  - workflow_walkthrough.md
+  - style_extraction_log.md
+  - paper_style_cards/
+  - style_profile.md
+  - writing_pattern_table.md
+  - dynamic_writing_skill.md
+  - section_diagnosis_sample.md
+  - section_revision_sample.md
+  - section_revision_log_sample.md
