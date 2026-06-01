@@ -23,6 +23,33 @@
       "source_subdir": ".",
       "target_dir": "skills/nature-skills",
       "exclude": [".git", ".github", "node_modules", "__pycache__", ".DS_Store"]
+    },
+    {
+      "name": "journal-adapt-writing-skill",
+      "enabled": true,
+      "repo": "https://github.com/WantongC/journal-adapt-writing-skill.git",
+      "ref": "main",
+      "source_subdir": ".",
+      "target_dir": "skills/journal-adapt-writing-skill",
+      "exclude": [".git", ".github", "node_modules", "__pycache__", ".DS_Store"]
+    },
+    {
+      "name": "PaperSpine-skill",
+      "enabled": true,
+      "repo": "https://github.com/WUBING2023/PaperSpine.git",
+      "ref": "main",
+      "source_subdir": ".",
+      "target_dir": "skills/PaperSpine-skill",
+      "exclude": [".git", ".github", "node_modules", "__pycache__", ".DS_Store"]
+    },
+    {
+      "name": "awesome-ai-research-writing",
+      "enabled": true,
+      "repo": "https://github.com/Leey21/awesome-ai-research-writing.git",
+      "ref": "main",
+      "source_subdir": ".",
+      "target_dir": "skills/awesome-ai-research-writing",
+      "exclude": [".git", ".github", "node_modules", "__pycache__", ".DS_Store"]
     }
   ]
 }
