@@ -9,7 +9,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 SUITE_SKILLS = [
     "paper-spine",
@@ -48,160 +47,36 @@ class SuiteHardeningTests(unittest.TestCase):
             names.append(name)
         self.assertEqual(len(names), len(set(names)))
 
-    def test_script_copies_match_root_versions(self) -> None:
-        copies = {
-            "src/scripts/intake_wizard.py": [
-                "dist/claude/skills/paper-spine/scripts/intake_wizard.py",
-                "dist/claude/skills/paper-spine-intake/scripts/intake_wizard.py",
-                "dist/claude/skills/paper-spine-ui/scripts/intake_wizard.py",
-                "dist/codex/paper-spine/scripts/intake_wizard.py",
-                "dist/codex/skills/paper-spine/scripts/intake_wizard.py",
-                "dist/codex/skills/paper-spine-intake/scripts/intake_wizard.py",
-                "dist/codex/skills/paper-spine-ui/scripts/intake_wizard.py",
-                "dist/openclaw/skills/paper-spine/scripts/intake_wizard.py",
-                "dist/openclaw/skills/paper-spine-intake/scripts/intake_wizard.py",
-                "dist/openclaw/skills/paper-spine-ui/scripts/intake_wizard.py",
-            ],
-            "src/scripts/launch_paperspine_ui.ps1": [
-                "dist/claude/skills/paper-spine/scripts/launch_paperspine_ui.ps1",
-                "dist/claude/skills/paper-spine-ui/scripts/launch_paperspine_ui.ps1",
-                "dist/claude/skills/paper-spine-intake/scripts/launch_paperspine_ui.ps1",
-                "dist/codex/paper-spine/scripts/launch_paperspine_ui.ps1",
-                "dist/codex/skills/paper-spine/scripts/launch_paperspine_ui.ps1",
-                "dist/codex/skills/paper-spine-ui/scripts/launch_paperspine_ui.ps1",
-                "dist/codex/skills/paper-spine-intake/scripts/launch_paperspine_ui.ps1",
-                "dist/openclaw/skills/paper-spine/scripts/launch_paperspine_ui.ps1",
-                "dist/openclaw/skills/paper-spine-ui/scripts/launch_paperspine_ui.ps1",
-                "dist/openclaw/skills/paper-spine-intake/scripts/launch_paperspine_ui.ps1",
-            ],
-            "src/scripts/launch_paperspine_ui.sh": [
-                "dist/claude/skills/paper-spine/scripts/launch_paperspine_ui.sh",
-                "dist/claude/skills/paper-spine-ui/scripts/launch_paperspine_ui.sh",
-                "dist/claude/skills/paper-spine-intake/scripts/launch_paperspine_ui.sh",
-                "dist/codex/paper-spine/scripts/launch_paperspine_ui.sh",
-                "dist/codex/skills/paper-spine/scripts/launch_paperspine_ui.sh",
-                "dist/codex/skills/paper-spine-ui/scripts/launch_paperspine_ui.sh",
-                "dist/codex/skills/paper-spine-intake/scripts/launch_paperspine_ui.sh",
-                "dist/openclaw/skills/paper-spine/scripts/launch_paperspine_ui.sh",
-                "dist/openclaw/skills/paper-spine-ui/scripts/launch_paperspine_ui.sh",
-                "dist/openclaw/skills/paper-spine-intake/scripts/launch_paperspine_ui.sh",
-            ],
-            "src/scripts/reference_inventory.py": [
-                "dist/claude/skills/paper-spine-research/scripts/reference_inventory.py",
-                "dist/codex/paper-spine/scripts/reference_inventory.py",
-                "dist/codex/skills/paper-spine-research/scripts/reference_inventory.py",
-                "dist/openclaw/skills/paper-spine-research/scripts/reference_inventory.py",
-            ],
-            "src/scripts/citation_bank_check.py": [
-                "dist/claude/skills/paper-spine-citation/scripts/citation_bank_check.py",
-                "dist/claude/skills/paper-spine-audit/scripts/citation_bank_check.py",
-                "dist/codex/paper-spine/scripts/citation_bank_check.py",
-                "dist/codex/skills/paper-spine-citation/scripts/citation_bank_check.py",
-                "dist/codex/skills/paper-spine-audit/scripts/citation_bank_check.py",
-                "dist/openclaw/skills/paper-spine-citation/scripts/citation_bank_check.py",
-                "dist/openclaw/skills/paper-spine-audit/scripts/citation_bank_check.py",
-            ],
-            "src/scripts/material_inventory.py": [
-                "dist/claude/skills/paper-spine/scripts/material_inventory.py",
-                "dist/claude/skills/paper-spine-build/scripts/material_inventory.py",
-                "dist/codex/paper-spine/scripts/material_inventory.py",
-                "dist/codex/skills/paper-spine/scripts/material_inventory.py",
-                "dist/codex/skills/paper-spine-build/scripts/material_inventory.py",
-                "dist/openclaw/skills/paper-spine/scripts/material_inventory.py",
-                "dist/openclaw/skills/paper-spine-build/scripts/material_inventory.py",
-            ],
-            "src/scripts/artifact_check.py": [
-                "dist/claude/skills/paper-spine/scripts/artifact_check.py",
-                "dist/claude/skills/paper-spine-audit/scripts/artifact_check.py",
-                "dist/codex/paper-spine/scripts/artifact_check.py",
-                "dist/codex/skills/paper-spine/scripts/artifact_check.py",
-                "dist/codex/skills/paper-spine-audit/scripts/artifact_check.py",
-                "dist/openclaw/skills/paper-spine/scripts/artifact_check.py",
-                "dist/openclaw/skills/paper-spine-audit/scripts/artifact_check.py",
-            ],
-            "src/scripts/word_guard.py": [
-                "dist/claude/skills/paper-spine-latex/scripts/word_guard.py",
-                "dist/claude/skills/paper-spine-audit/scripts/word_guard.py",
-                "dist/codex/paper-spine/scripts/word_guard.py",
-                "dist/codex/skills/paper-spine-latex/scripts/word_guard.py",
-                "dist/codex/skills/paper-spine-audit/scripts/word_guard.py",
-                "dist/openclaw/skills/paper-spine-latex/scripts/word_guard.py",
-                "dist/openclaw/skills/paper-spine-audit/scripts/word_guard.py",
-            ],
-            "src/scripts/latex_guard.py": [
-                "dist/claude/skills/paper-spine-latex/scripts/latex_guard.py",
-                "dist/claude/skills/paper-spine-audit/scripts/latex_guard.py",
-                "dist/codex/paper-spine/scripts/latex_guard.py",
-                "dist/codex/skills/paper-spine-latex/scripts/latex_guard.py",
-                "dist/codex/skills/paper-spine-audit/scripts/latex_guard.py",
-                "dist/openclaw/skills/paper-spine-latex/scripts/latex_guard.py",
-                "dist/openclaw/skills/paper-spine-audit/scripts/latex_guard.py",
-            ],
-            "src/scripts/revision_audit.py": [
-                "dist/claude/skills/paper-spine-audit/scripts/revision_audit.py",
-                "dist/codex/paper-spine/scripts/revision_audit.py",
-                "dist/codex/skills/paper-spine-audit/scripts/revision_audit.py",
-                "dist/openclaw/skills/paper-spine-audit/scripts/revision_audit.py",
-            ],
-            "src/scripts/paperspine_update.py": [
-                "dist/claude/skills/paper-spine-update/scripts/paperspine_update.py",
-                "dist/codex/paper-spine/scripts/paperspine_update.py",
-                "dist/codex/skills/paper-spine-update/scripts/paperspine_update.py",
-                "dist/openclaw/skills/paper-spine-update/scripts/paperspine_update.py",
-            ],
-            "src/scripts/_paper_spine_utils.py": [
-                "dist/claude/skills/paper-spine/scripts/_paper_spine_utils.py",
-                "dist/claude/skills/paper-spine-audit/scripts/_paper_spine_utils.py",
-                "dist/claude/skills/paper-spine-citation/scripts/_paper_spine_utils.py",
-                "dist/codex/paper-spine/scripts/_paper_spine_utils.py",
-                "dist/codex/skills/paper-spine/scripts/_paper_spine_utils.py",
-                "dist/codex/skills/paper-spine-audit/scripts/_paper_spine_utils.py",
-                "dist/codex/skills/paper-spine-citation/scripts/_paper_spine_utils.py",
-                "dist/openclaw/skills/paper-spine/scripts/_paper_spine_utils.py",
-                "dist/openclaw/skills/paper-spine-audit/scripts/_paper_spine_utils.py",
-                "dist/openclaw/skills/paper-spine-citation/scripts/_paper_spine_utils.py",
-            ],
-            "src/scripts/integrity_audit.py": [
-                "dist/claude/skills/paper-spine/scripts/integrity_audit.py",
-                "dist/claude/skills/paper-spine-audit/scripts/integrity_audit.py",
-                "dist/codex/paper-spine/scripts/integrity_audit.py",
-                "dist/codex/skills/paper-spine/scripts/integrity_audit.py",
-                "dist/codex/skills/paper-spine-audit/scripts/integrity_audit.py",
-                "dist/openclaw/skills/paper-spine/scripts/integrity_audit.py",
-                "dist/openclaw/skills/paper-spine-audit/scripts/integrity_audit.py",
-            ],
-            "src/scripts/citation_quality_audit.py": [
-                "dist/claude/skills/paper-spine-citation/scripts/citation_quality_audit.py",
-                "dist/codex/paper-spine/scripts/citation_quality_audit.py",
-                "dist/codex/skills/paper-spine-citation/scripts/citation_quality_audit.py",
-                "dist/openclaw/skills/paper-spine-citation/scripts/citation_quality_audit.py",
-            ],
-            "src/scripts/structured_review.py": [
-                "dist/claude/skills/paper-spine/scripts/structured_review.py",
-                "dist/claude/skills/paper-spine-audit/scripts/structured_review.py",
-                "dist/codex/paper-spine/scripts/structured_review.py",
-                "dist/codex/skills/paper-spine/scripts/structured_review.py",
-                "dist/codex/skills/paper-spine-audit/scripts/structured_review.py",
-                "dist/openclaw/skills/paper-spine/scripts/structured_review.py",
-                "dist/openclaw/skills/paper-spine-audit/scripts/structured_review.py",
-            ],
-            "src/scripts/humanize_check.py": [
-                "dist/claude/skills/paper-spine-humanize/scripts/humanize_check.py",
-                "dist/codex/paper-spine/scripts/humanize_check.py",
-                "dist/codex/skills/paper-spine-humanize/scripts/humanize_check.py",
-                "dist/openclaw/skills/paper-spine-humanize/scripts/humanize_check.py",
-            ],
-            "src/scripts/translate_guard.py": [
-                "dist/claude/skills/paper-spine-translate/scripts/translate_guard.py",
-                "dist/codex/paper-spine/scripts/translate_guard.py",
-                "dist/codex/skills/paper-spine-translate/scripts/translate_guard.py",
-                "dist/openclaw/skills/paper-spine-translate/scripts/translate_guard.py",
-            ],
-        }
-        for source, targets in copies.items():
-            source_text = read(source)
-            for target in targets:
-                self.assertEqual(read(target), source_text, target)
+    def test_dist_copies_match_source_of_truth(self) -> None:
+        """Every dist copy of a src script/reference must match its source byte-for-byte.
+
+        Glob-driven: a newly added copy is checked automatically, so there is no
+        manual copy list to keep in sync (the previous hardcoded map could
+        silently miss new copies).
+        """
+        dist_root = ROOT / "dist"
+        scripts_dir = ROOT / "src" / "scripts"
+        references_dir = ROOT / "src" / "references"
+        source_files = sorted(
+            list(scripts_dir.glob("*.py"))
+            + list(scripts_dir.glob("*.sh"))
+            + list(scripts_dir.glob("*.ps1"))
+            + list(references_dir.glob("*.md"))
+        )
+        self.assertTrue(source_files, "no source files discovered under src/")
+
+        checked = 0
+        out_of_sync: list[str] = []
+        for src_file in source_files:
+            source_bytes = src_file.read_bytes()
+            for copy in dist_root.rglob(src_file.name):
+                if not copy.is_file():
+                    continue
+                checked += 1
+                if copy.read_bytes() != source_bytes:
+                    out_of_sync.append(str(copy.relative_to(ROOT)))
+        self.assertEqual(out_of_sync, [], f"dist copies out of sync with src: {out_of_sync}")
+        self.assertGreater(checked, 0, "no dist copies discovered")
 
     def test_readme_documents_suite_modes_and_install_paths(self) -> None:
         text = read("README.md")
@@ -284,7 +159,13 @@ class SuiteHardeningTests(unittest.TestCase):
                     f"{host}:{skill}:SKILL.md",
                 )
                 if skill != "paper-spine-citation":
-                    self.assertTrue((host_dir / "agents" / "openai.yaml").exists(), f"{host}:{skill}:agents")
+                    host_agents = host_dir / "agents" / "openai.yaml"
+                    self.assertTrue(host_agents.exists(), f"{host}:{skill}:agents")
+                    self.assertEqual(
+                        host_agents.read_bytes(),
+                        (claude_dir / "agents" / "openai.yaml").read_bytes(),
+                        f"{host}:{skill}:agents/openai.yaml",
+                    )
 
     def test_codex_release_layout_exposes_full_suite_and_legacy_bundle(self) -> None:
         for skill in SUITE_SKILLS:
@@ -321,6 +202,8 @@ class SuiteHardeningTests(unittest.TestCase):
                     str(base / "claude" / "commands"),
                     "--openclaw-skills-dir",
                     str(base / "openclaw" / "skills"),
+                    "--codex-prompts-dir",
+                    str(base / "codex" / "prompts"),
                     "--config-home",
                     str(base / "config"),
                 ],
@@ -331,6 +214,7 @@ class SuiteHardeningTests(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            self.assertTrue((base / "codex" / "prompts" / "paperspine.md").exists())
             self.assertTrue((base / "desktop" / "PaperSpine" / "dist" / "codex" / "paper-spine" / "SKILL.md").exists())
             self.assertTrue((base / "desktop" / "PaperSpine" / "dist" / "codex" / "skills" / "paper-spine-research" / "SKILL.md").exists())
             self.assertTrue((base / "desktop" / "PaperSpine" / ".claude-plugin" / "plugin.json").exists())
@@ -362,7 +246,7 @@ class SuiteHardeningTests(unittest.TestCase):
     def test_sync_skill_overrides_cleans_stale_entries(self) -> None:
         import tempfile
         sys.path.insert(0, str(ROOT / "src" / "scripts"))
-        from sync_local_installs import sync_skill_overrides, PAPERSPINE_INTERNAL_SKILLS
+        from sync_local_installs import sync_skill_overrides
         with tempfile.TemporaryDirectory() as tmp:
             settings_dir = Path(tmp) / ".claude"
             settings_dir.mkdir(parents=True)
@@ -400,8 +284,12 @@ class SuiteHardeningTests(unittest.TestCase):
                     str(base / "codex" / "skills"),
                     "--claude-skills-dir",
                     str(base / "claude" / "skills"),
+                    "--claude-commands-dir",
+                    str(base / "claude" / "commands"),
                     "--openclaw-skills-dir",
                     str(base / "openclaw" / "skills"),
+                    "--codex-prompts-dir",
+                    str(base / "codex" / "prompts"),
                     "--config-home",
                     str(base / "config"),
                 ],

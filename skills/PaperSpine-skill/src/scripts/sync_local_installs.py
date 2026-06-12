@@ -10,10 +10,10 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
 DIST_CODEX_SKILL = ROOT / "dist" / "codex" / "paper-spine"
 DIST_CODEX_SKILLS = ROOT / "dist" / "codex" / "skills"
+DIST_CODEX_PROMPTS = ROOT / "dist" / "codex" / "prompts"
 DIST_CLAUDE_SKILLS = ROOT / "dist" / "claude" / "skills"
 DIST_CLAUDE_COMMANDS = ROOT / "dist" / "claude" / "commands"
 DIST_OPENCLAW_SKILLS = ROOT / "dist" / "openclaw" / "skills"
@@ -67,6 +67,12 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=home / ".openclaw" / "skills",
         help="OpenClaw skills directory. Receives dist/openclaw/skills/*.",
+    )
+    parser.add_argument(
+        "--codex-prompts-dir",
+        type=Path,
+        default=home / ".codex" / "prompts",
+        help="Codex custom prompts directory. Receives dist/codex/prompts/*.md (the /paperspine command).",
     )
     parser.add_argument("--clean-legacy", action="store_true")
     parser.add_argument("--clean-legacy-claude-nested", action="store_true", help="Deprecated alias for --clean-legacy.")
@@ -168,6 +174,10 @@ def sync_local_installs(args: argparse.Namespace) -> None:
     for skill_dir in DIST_OPENCLAW_SKILLS.iterdir():
         if skill_dir.is_dir():
             copy_tree(skill_dir, args.openclaw_skills_dir / skill_dir.name)
+    if DIST_CODEX_PROMPTS.exists():
+        args.codex_prompts_dir.mkdir(parents=True, exist_ok=True)
+        for prompt_file in DIST_CODEX_PROMPTS.glob("*.md"):
+            shutil.copy2(prompt_file, args.codex_prompts_dir / prompt_file.name)
 
 
 def sync_dist_only() -> None:
@@ -177,16 +187,51 @@ def sync_dist_only() -> None:
     dist_root = ROOT / "dist"
 
     synced = 0
-    for src_file in list(src_scripts.glob("*.py")) + list(src_scripts.glob("*.sh")) + list(src_references.glob("*.md")):
+    source_files = (
+        list(src_scripts.glob("*.py"))
+        + list(src_scripts.glob("*.sh"))
+        + list(src_scripts.glob("*.ps1"))
+        + list(src_references.glob("*.md"))
+    )
+    for src_file in source_files:
         for dist_copy in dist_root.rglob(src_file.name):
             if dist_copy.is_file():
                 shutil.copy2(src_file, dist_copy)
                 synced += 1
 
+    synced += sync_skill_files_across_hosts(dist_root)
+
     print(f"Dist-only sync complete: {synced} files updated")
     print(f"Source scripts: {src_scripts}")
     print(f"Source references: {src_references}")
     print(f"Dist root: {dist_root}")
+
+
+def sync_skill_files_across_hosts(dist_root: Path) -> int:
+    """Fan out each suite skill's canonical per-skill files to every host copy.
+
+    SKILL.md and agents/openai.yaml have no src/ home, so the Claude flat-suite
+    copy is the single source of truth; Codex and OpenClaw copies are generated
+    from it. This keeps the three hosts byte-identical without hand-editing each
+    copy (the previous cause of cross-copy drift and escaping bugs). Only files
+    that already exist in a host are updated (e.g. paper-spine-citation ships no
+    agents/openai.yaml). The legacy dist/codex/paper-spine bundle is a separate
+    artifact and is left untouched.
+    """
+    synced = 0
+    claude_skills = dist_root / "claude" / "skills"
+    per_skill_files = ("SKILL.md", "agents/openai.yaml")
+    for skill in SUITE_SKILLS:
+        for rel in per_skill_files:
+            canonical = claude_skills / skill / rel
+            if not canonical.is_file():
+                continue
+            for host in ("codex", "openclaw"):
+                target = dist_root / host / "skills" / skill / rel
+                if target.is_file() and target.read_bytes() != canonical.read_bytes():
+                    shutil.copy2(canonical, target)
+                    synced += 1
+    return synced
 
 
 PAPERSPINE_INTERNAL_SKILLS: set[str] = set()

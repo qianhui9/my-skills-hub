@@ -48,7 +48,7 @@ def test_does_not_flag_legitimate_research_findings():
         # codex's flagged research phrasings — bare model/infra names must NOT flag:
         "Oracle cannot improve accuracy when the proxy labels are noisy.",
         "Gemini cannot solve the compositional reasoning benchmark zero-shot.",
-        "GPT-5.4 cannot reliably prove the theorem without symbolic verification.",
+        "GPT-5.5 cannot reliably prove the theorem without symbolic verification.",
         "Codex does not pass the HumanEval-style variant with hidden state.",
         "The API does not expose gradients, so the method uses score estimates.",
         "The server cannot support synchronous aggregation under straggler delays.",

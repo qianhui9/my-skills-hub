@@ -30,7 +30,7 @@ class SharedUtilsTests(unittest.TestCase):
         try:
             fd, name = tempfile.mkstemp(suffix=".txt")
             import os as _os
-            _os.write(fd, "Hello World".encode("utf-8"))
+            _os.write(fd, b"Hello World")
             _os.close(fd)
             self.assertEqual(read_text(Path(name)), "Hello World")
         finally:

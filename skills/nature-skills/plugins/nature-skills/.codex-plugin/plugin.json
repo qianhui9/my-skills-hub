@@ -19,6 +19,7 @@
     "publication"
   ],
   "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Nature Skills",
     "shortDescription": "Nature-style academic writing, figures, citations, and paper workflows",

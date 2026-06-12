@@ -126,5 +126,4 @@ class TranslateGuardTests(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    import json as _json
     unittest.main()

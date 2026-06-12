@@ -63,7 +63,8 @@ Choose the path that matches your agent:
 
 - **Codex plugin marketplace**: best if you want the packaged bundle
 - **Codex local skills**: best if you want direct folder copying
-- **Claude Code**: best if you want terminal-based agent workflows, but you need a thin wrapper because Claude Code does not natively consume Codex-style skill folders
+- **Claude Code plugin marketplace**: best if you want direct plugin installation from this repository
+- **Claude Code wrappers**: best if you prefer terminal-based agent workflows pinned to a local clone path
 - **Other agents**: use the whole skill folder as a reusable prompt bundle
 
 ---
@@ -167,9 +168,38 @@ cp -R skills/nature-polishing ~/.codex/skills/
 
 ## 4. Install for Claude Code
 
-Claude Code does **not** currently load a `nature-*` folder as a native skill in the same way Codex does.
+Claude Code can install this repository in **two** ways:
 
-The practical solution is:
+1. directly through the Claude Code plugin marketplace using the repository's
+   `.claude-plugin/` metadata
+2. through a thin wrapper/subagent that points to a stable local clone
+
+### 4.1 Direct plugin installation (recommended when available)
+
+This repository already ships Claude Code plugin metadata in:
+
+```text
+.claude-plugin/
+  plugin.json
+  marketplace.json
+```
+
+So Claude Code users can install the bundle directly:
+
+```bash
+claude plugin marketplace add Yuan1z0825/nature-skills
+claude plugin install nature-skills@nature-skills
+```
+
+After installation:
+
+- restart Claude Code or open a fresh session if the plugin does not appear
+- the complete `nature-skills` bundle should be available without manually
+  creating wrappers
+
+### 4.2 Wrapper / subagent installation
+
+If you prefer a local clone path and explicit wrappers, the practical solution is:
 
 1. keep a local clone of this repository
 2. create a small Claude Code wrapper
@@ -183,7 +213,7 @@ Official Claude Code documentation:
 - Subagents: <https://docs.anthropic.com/en/docs/claude-code/sub-agents>
 - Slash commands: <https://docs.anthropic.com/en/docs/claude-code/slash-commands>
 
-### 4.1 Install Claude Code first
+### 4.2.1 Install Claude Code first
 
 If you have not installed Claude Code yet:
 
@@ -192,7 +222,7 @@ npm install -g @anthropic-ai/claude-code
 claude
 ```
 
-### 4.2 Clone this repository to a stable local path
+### 4.2.2 Clone this repository to a stable local path
 
 Example:
 
@@ -210,7 +240,7 @@ In the examples below, the repository path is:
 
 If you use a different path, replace it consistently.
 
-### 4.3 Recommended method: create a subagent wrapper
+### 4.2.3 Recommended wrapper method: create a subagent
 
 Create a user-level subagent:
 
@@ -237,7 +267,7 @@ Then start a new Claude Code session and ask:
 Use the nature-polishing subagent to revise this abstract.
 ```
 
-### 4.4 Alternative method: create a slash command wrapper
+### 4.2.4 Alternative wrapper method: create a slash command
 
 If you prefer a command instead of a subagent:
 
@@ -257,7 +287,7 @@ Then inside Claude Code:
 /nature-polishing Rewrite this abstract for Nature.
 ```
 
-### 4.5 Why this wrapper approach is better than copying only `SKILL.md`
+### 4.2.5 Why the wrapper approach is better than copying only `SKILL.md`
 
 This repository was not designed as a single-file Claude Code prompt pack.
 
@@ -269,7 +299,7 @@ If you only copy `SKILL.md` into `~/.claude/agents/` and leave the rest behind:
 
 Keeping the repo cloned and pointing Claude Code at the real folder is more robust.
 
-### 4.6 Install more skills for Claude Code
+### 4.2.6 Install more skills for Claude Code
 
 Repeat the same pattern for other folders:
 
@@ -283,6 +313,10 @@ Repeat the same pattern for other folders:
 - `nature-response`
 - `nature-reviewer`
 - `nature-writing`
+
+Use the plugin-marketplace path if you want the full bundle with the least
+manual setup. Use wrappers if you want each skill pinned to a specific local
+clone path and editable outside the plugin lifecycle.
 
 For example, a `nature-paper2ppt` wrapper should point to:
 

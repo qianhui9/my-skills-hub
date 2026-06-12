@@ -1,6 +1,5 @@
 """Tests for citation_quality_audit.py."""
 
-import json
 import sys
 import tempfile
 import unittest
@@ -13,7 +12,6 @@ from citation_quality_audit import (
     classify_citation_type,
     compute_recency_score,
     extract_dois,
-    parse_citation_rows,
     title_similarity,
     to_markdown,
 )

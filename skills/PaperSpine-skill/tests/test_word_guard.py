@@ -7,7 +7,6 @@ import unittest
 import zipfile
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -139,6 +138,121 @@ class WordGuardTests(unittest.TestCase):
             ]
             make_docx(docx, paragraphs)
             result = run_guard(docx, min_chars=200)
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+
+
+    def test_leaked_latex_commands_fail(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            docx = Path(tmp) / "paper.docx"
+            make_docx(docx, [
+                "As shown by prior work \\cite{smith2020}, the method is effective. " * 6,
+                "See \\ref{fig:overview} for the architecture diagram. " * 6,
+            ])
+            result = run_guard(docx, min_chars=50)
+            self.assertEqual(result.returncode, 1, result.stderr + result.stdout)
+            self.assertIn("Unrendered LaTeX commands", result.stdout)
+
+    def test_citeproc_leftover_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            docx = Path(tmp) / "paper.docx"
+            make_docx(docx, [
+                "Recent advances [@smith2020] improved the baseline substantially. " * 6,
+            ])
+            result = run_guard(docx, min_chars=50)
+            self.assertEqual(result.returncode, 1, result.stderr + result.stdout)
+            self.assertIn("Unresolved citation markers", result.stdout)
+
+    def test_raw_inline_math_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            docx = Path(tmp) / "paper.docx"
+            make_docx(docx, [
+                "The loss is defined as $\\alpha + \\beta$ over all samples in the batch. " * 6,
+            ])
+            result = run_guard(docx, min_chars=50)
+            self.assertEqual(result.returncode, 1, result.stderr + result.stdout)
+            self.assertIn("Raw inline LaTeX math", result.stdout)
+
+    def test_currency_dollar_not_flagged_as_math(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            docx = Path(tmp) / "paper.docx"
+            make_docx(docx, [
+                "The project raised $5 million in funding for the new lab facility. " * 6,
+            ])
+            result = run_guard(docx, min_chars=50)
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+
+    def test_custom_macro_with_argument_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            docx = Path(tmp) / "paper.docx"
+            make_docx(docx, [
+                "The result \\mymetric{0.93} exceeds all prior baselines by a wide margin. " * 6,
+            ])
+            result = run_guard(docx, min_chars=50)
+            self.assertEqual(result.returncode, 1, result.stderr + result.stdout)
+            self.assertIn("Unrendered LaTeX commands", result.stdout)
+
+    def test_broken_crossref_marker_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            docx = Path(tmp) / "paper.docx"
+            make_docx(docx, [
+                "The architecture is summarized in Figure [?] of the methods section. " * 6,
+            ])
+            result = run_guard(docx, min_chars=50)
+            self.assertEqual(result.returncode, 1, result.stderr + result.stdout)
+            self.assertIn("Broken cross-references", result.stdout)
+
+    def test_subscript_math_without_backslash_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            docx = Path(tmp) / "paper.docx"
+            make_docx(docx, [
+                "The hidden state $h_t$ updates at each step over the full sequence length. " * 6,
+            ])
+            result = run_guard(docx, min_chars=50)
+            self.assertEqual(result.returncode, 1, result.stderr + result.stdout)
+            self.assertIn("Raw inline LaTeX math", result.stdout)
+
+    def test_currency_with_underscore_identifier_not_flagged(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            docx = Path(tmp) / "paper.docx"
+            make_docx(docx, [
+                "Each file_name row costs $5 to process and $10 to archive in the system. " * 6,
+            ])
+            result = run_guard(docx, min_chars=50)
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+
+    def test_numeric_bibstyle_rendered_authordate_warns(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            docx = Path(tmp) / "paper.docx"
+            (Path(tmp) / "main.tex").write_text(
+                "\\documentclass{article}\\bibliographystyle{ieeetr}\\begin{document}x\\end{document}",
+                encoding="utf-8")
+            make_docx(docx, [
+                "As shown by prior work (Devlin et al. 2019) the method is effective overall. " * 6,
+            ])
+            result = run_guard(docx, min_chars=50)
+            self.assertEqual(result.returncode, 1, result.stderr + result.stdout)
+            self.assertIn("Citation style mismatch", result.stdout)
+
+    def test_numeric_bibstyle_with_numeric_citations_passes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            docx = Path(tmp) / "paper.docx"
+            (Path(tmp) / "main.tex").write_text(
+                "\\bibliographystyle{plain}", encoding="utf-8")
+            make_docx(docx, [
+                "As shown by prior work [1] the method is effective over the full benchmark suite. " * 6,
+            ])
+            result = run_guard(docx, min_chars=50)
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+
+    def test_authordate_bibstyle_does_not_warn(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            docx = Path(tmp) / "paper.docx"
+            (Path(tmp) / "main.tex").write_text(
+                "\\bibliographystyle{plainnat}", encoding="utf-8")
+            make_docx(docx, [
+                "As shown by prior work (Devlin et al. 2019) the method is effective overall. " * 6,
+            ])
+            result = run_guard(docx, min_chars=50)
             self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
 
 

@@ -6,7 +6,7 @@ All review calls use **Codex MCP** (`mcp__codex__codex`, default model `gpt-5.5`
 
 This is the default for ALL skills. No parameter, no config, no effort level changes this.
 
-## Optional: GPT-5.4 Pro via Oracle
+## Optional: GPT-5.5 Pro via Oracle
 
 When the user explicitly passes `— reviewer: oracle-pro`, route the review through Oracle MCP instead of Codex MCP.
 
@@ -23,7 +23,7 @@ If `— reviewer: oracle-pro`:
     → Check if mcp__oracle__consult tool is available
     → If available:
         Use mcp__oracle__consult with:
-          model: "gpt-5.4-pro"
+          model: "gpt-5.5-pro"
           prompt: [same prompt you would send to Codex]
           files: [file paths for reviewer to read directly]
         Note: Oracle may use API mode (fast, needs OPENAI_API_KEY)
@@ -48,7 +48,7 @@ mcp__oracle__consult:
   prompt: |
     [role + task + output schema]
     Read all listed files directly.
-  model: "gpt-5.4-pro"
+  model: "gpt-5.5-pro"
   files:
     - /absolute/path/to/file1
     - /absolute/path/to/file2
@@ -211,6 +211,16 @@ Manual review supports medium/hard MCP-style review. Codex-exec nightmare mode i
 ### NOT installed = explicit error (not silent fallback)
 
 If manual-review MCP is not installed, `— reviewer: manual` prints install instructions and stops. It does NOT fall back to Codex — the target user likely has no Codex subscription, so a silent fallback would fail anyway.
+
+### `codex exec` CLI is NOT an equivalent Codex backend
+
+The mainline reviewer contract is `mcp__codex__codex` + `mcp__codex__codex-reply`: skills rely on **thread continuity** (e.g. `/idea-creator` Phase 4 runs its devil's-advocate triage as a same-thread `codex-reply`), structured returns, and saved `threadId` traces. `codex exec --ephemeral` is a stateless one-shot — fine for a single self-contained review, but NOT a drop-in replacement: hand-rewriting every MCP call to `codex exec` silently loses reply continuity and tends to mangle SKILL.md instructions (observed in the wild as "the executor skips phases and improvises" — issue #284).
+
+If Codex MCP is broken in your setup, prefer in order:
+
+1. Fix the MCP registration: `claude mcp add codex -s user -- codex mcp-server`, then `/mcp` in-session to (re)connect.
+2. Codex-CLI-as-executor: use the native mirror pack [`skills/skills-codex/`](../skills-codex/) — designed to run inside Codex CLI without Claude-side MCP.
+3. One-shot `codex exec` only for skills whose review is a single call with no follow-up reply.
 
 ### Future work
 
