@@ -50,6 +50,15 @@
       "source_subdir": ".",
       "target_dir": "skills/awesome-ai-research-writing",
       "exclude": [".git", ".github", "node_modules", "__pycache__", ".DS_Store"]
+    },
+    {
+      "name": "GordenSuperPPTSkills",
+      "enabled": true,
+      "repo": "https://github.com/GordenSun/GordenSuperPPTSkills.git",
+      "ref": "main",
+      "source_subdir": ".",
+      "target_dir": "skills/GordenSuperPPTSkills",
+      "exclude": [".git", ".github", "node_modules", "__pycache__", ".DS_Store"]
     }
   ]
 }
