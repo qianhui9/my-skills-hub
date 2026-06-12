@@ -34,7 +34,7 @@ def has_send_input_block(text: str) -> bool:
 def test_codex_skill_set_matches_mainline() -> None:
     main_names = skill_names(MAIN_SKILLS)
     codex_names = skill_names(CODEX_SKILLS)
-    assert len(main_names) == 77
+    assert len(main_names) == 79
     assert main_names == codex_names
 
 
@@ -122,7 +122,7 @@ def test_overlay_boundaries_are_exact() -> None:
         "novelty-check",
         "paper-figure",
         "paper-plan",
-        "paper-poster",
+        "paper-poster-html",
         "paper-slides",
         "paper-write",
         "paper-writing",
@@ -137,7 +137,7 @@ def test_non_degrading_skill_rules_are_documented() -> None:
     checks = {
         "comm-lit-review": "Do not silently downgrade",
         "research-lit": "stop and ask the user to configure",
-        "paper-poster": "Do not silently degrade",
+        "paper-poster-html": "Do not silently degrade",
         "pixel-art": "Do not silently downgrade",
     }
     for name, needle in checks.items():

@@ -1,15 +1,44 @@
 # nature-skills
-大家好，我是上海交通大学博士生袁一哲，目前主要从事医疗 AI 相关的研究与创业实践。欢迎大家持续关注 nature-skill。如果你有任何需求，欢迎提交 issue；如果我们认为该需求有意义且可行，也会尽量推进实现。我们同样欢迎 PR，但请务必按照 README 后面说明的格式提交，以便我们更高效地审核与合并。
+大家好，我是nature skills的创立者袁一哲，从github以及其他途径联系我的顶尖AI人才数不胜数，所以我成立了TOP AI CREW！今天起人才联盟正式招募！
+这里汇聚经过严格筛选的行业强者，多元思维碰撞，前沿技术共生。
+拒绝单打独斗，告别低效内耗，和一群同频的顶尖伙伴并肩前行，深耕AI领域，突破技术边界，一同站上行业前沿。
+敢想、敢闯、敢创造，下一个AI传奇，由我们共同书写！
 
-Hello everyone, I’m Yuan Yizhe, a PhD student at Shanghai Jiao Tong University. I’m currently working on research and entrepreneurial projects in medical AI. Thank you for your continued interest in nature-skill. If you have any requests, feel free to open an issue. If we find the request meaningful and feasible, we’ll do our best to implement it. We also welcome PRs, but please make sure to follow the submission format described later in the README so that we can review and merge them more efficiently.
+感谢大家持续关注 nature-skill。如果你有任何需求，欢迎提交 issue；如果我们认为该需求有意义且可行，也会尽量推进实现。我们同样欢迎 PR，但请务必按照 README 后面说明的格式提交，以便我们更高效地审核与合并。
+<table>
+  <tr>
+    <td align="center">
+      <b></b><br>
+      <img width="400" alt="232c0c2e87d7e52eb9cebff6dea41382" src="https://github.com/user-attachments/assets/078bd8df-9715-413a-b243-3d1519c5936d" />
+    </td>
+    <td align="center">
+      <b>个人微信</b><br>
+      <img width="400" alt="个人微信" src="https://github.com/user-attachments/assets/9e2931fb-748b-418e-97ab-0515d191633d" />
+    </td>
+    <td align="center">
+      <b>个人简介</b><br>
+      <img width="400" alt="个人简介" src="https://github.com/user-attachments/assets/4930665b-ce34-4dd1-a02a-fb03b3673046" />
+    </td>
+  </tr>
+</table>
+
+Hello everyone, I’m Yizhe Yuan, founder of Nature Skills.
+After being contacted by countless top AI talents through GitHub and other channels, I decided to launch TOP AI CREW. Starting today, our talent alliance is officially open for recruitment.
+This is a community of carefully selected industry leaders: a place where diverse perspectives collide, frontier technologies evolve, and ambitious builders grow together.
+No more working in isolation. No more wasting energy on inefficient solo battles. Here, you’ll move forward alongside a group of world-class, like-minded peers—deepening your expertise in AI, pushing technical boundaries, and advancing to the forefront of the industry together.
+Think boldly. Move fearlessly. Create relentlessly.
+The next AI legend will be written by us—together.
+
+Thank you for your continued interest in nature-skill.
+If you have any feature requests or suggestions, please feel free to submit an Issue. If we find the proposal meaningful and feasible, we will do our best to implement it. We also welcome Pull Requests (PRs). However, please follow the contribution format described later in this README to help us review and merge submissions more efficiently.
 
 ## 📢 课题组诚招“医学 + AI”实习生
 <table border="0" cellpadding="10" cellspacing="0">
   <tr>
     <td width="34%" valign="top" align="center" style="border: none; background-color: #f9f9f9; padding: 20px; border-radius: 8px;">
       <span style="font-size: 14px; color: #666;">微信群聊</span><br>
-      <img src="https://github.com/user-attachments/assets/eff065cd-e854-4d16-af40-fbc99129afb4" width="100%" style="max-width:160px; margin-top:15px; border: 1px solid #eee;">
-      <div style="margin-top:10px; font-size: 13px; color: #666;">答疑交流群！进群记得12小时内备注</div>
+      <img width="1080" height="1632" alt="d5d363362ff7abc00a1a1b82b842f65c" src="https://github.com/user-attachments/assets/83aee670-fcb4-44d9-9bae-cf5ca39f555c" />
+      <div style="margin-top:10px; font-size: 13px; color: #666;">答疑交流群！进群请立刻改备注</div>
     </td>
     <td width="66%" valign="top" style="border: none; line-height: 1.6;">
       还在寻找能够落地的 <strong>AI 前沿交叉赛道</strong>吗？我们课题组现向对“医学 + AI”充满热情的你发出邀请！<br><br>
@@ -115,10 +144,28 @@ a longer walkthrough, see [`install.md`](install.md).
 
 ### 2. Claude Code
 
-Claude Code does not consume Codex skill folders directly. The recommended
-Claude Code setup is a thin subagent or slash-command wrapper that points to a
-stable clone of this repository, so supporting files such as `references/`,
-`static/`, assets, scripts, and `skills/_shared/` remain available.
+**Claude Code plugin marketplace installation**
+
+This repository also includes Claude Code plugin metadata at
+`.claude-plugin/`, so Claude Code users can install the complete Nature Skills
+bundle directly as a plugin instead of setting up wrappers first.
+
+CLI installation:
+
+```bash
+claude plugin marketplace add Yuan1z0825/nature-skills
+claude plugin install nature-skills@nature-skills
+```
+
+If the plugin does not appear immediately, refresh the plugin page or start a
+new Claude Code session.
+
+**Alternative: wrapper/subagent installation**
+
+Claude Code can also use a thin subagent or slash-command wrapper that points
+to a stable clone of this repository, so supporting files such as
+`references/`, `static/`, assets, scripts, and `skills/_shared/` remain
+available.
 
 ```bash
 mkdir -p ~/ai-skills
@@ -186,7 +233,7 @@ In that case:
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Yuan1z0825/nature-skills&type=Date&cache_bust=2026-06-01T05)](https://star-history.com/#Yuan1z0825/nature-skills&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=Yuan1z0825/nature-skills&type=Date&cache_bust=2026-06-07T16)](https://star-history.com/#Yuan1z0825/nature-skills&Date)
 
 
 ## Skill index

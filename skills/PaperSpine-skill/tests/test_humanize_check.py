@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src" / "scripts"))
-from humanize_check import check_matrix, count_connectors, HumanizeCheckResult, to_markdown
+from humanize_check import HumanizeCheckResult, check_matrix, count_connectors, to_markdown
 
 
 class HumanizeCheckTests(unittest.TestCase):

@@ -2,14 +2,12 @@ from __future__ import annotations
 
 import json
 import os
-import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
 import zipfile
 from pathlib import Path
-
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "src" / "scripts" / "paperspine_update.py"
@@ -48,9 +46,9 @@ def create_repo(root: Path, version: str, *, broken: bool = False) -> Path:
     (root / "install.ps1").write_text("# installer\n", encoding="utf-8")
     (root / "install.sh").write_text("#!/bin/bash\n# installer\n", encoding="utf-8")
     (root / "README.md").write_text("# PaperSpine\n", encoding="utf-8")
-    (root / "README.zh-CN.md").write_text("# PaperSpine\n", encoding="utf-8")
+    (root / "README.en.md").write_text("# PaperSpine\n", encoding="utf-8")
     (root / "dist" / "claude" / "commands").mkdir(parents=True)
-    for cmd_name in ("paperspine.md", "paper-spine.md", "paperspine-legacy.md"):
+    for cmd_name in ("paperspine.md",):
         (root / "dist" / "claude" / "commands" / cmd_name).write_text(
             f"---\ndescription: {cmd_name}\n---\n", encoding="utf-8")
     (root / "dist" / "codex" / "paper-spine").mkdir(parents=True)
@@ -172,6 +170,37 @@ class PaperSpineUpdateScriptTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
             state = json.loads((base / "config" / "install_state.json").read_text(encoding="utf-8"))
             self.assertEqual(state["installed_version"], "2.0.0")
+
+
+class ValidateRepoTests(unittest.TestCase):
+    def _import_updater(self):
+        sys.path.insert(0, str(ROOT / "src" / "scripts"))
+        import paperspine_update  # noqa: PLC0415
+
+        return paperspine_update
+
+    def test_validate_repo_accepts_actual_repository(self) -> None:
+        """Guards against validate_repo drifting from the real dist layout."""
+        updater = self._import_updater()
+        manifest = updater.validate_repo(ROOT)
+        self.assertIn("version", manifest)
+
+    def test_resolve_claude_settings_dir_honors_env_override(self) -> None:
+        """The overrides cleanup must never touch the real ~/.claude."""
+        updater = self._import_updater()
+        with tempfile.TemporaryDirectory() as tmp:
+            override = Path(tmp) / "fake" / ".claude" / "skills"
+            old = os.environ.get("PAPERSPINE_CLAUDE_SKILLS_DIR")
+            os.environ["PAPERSPINE_CLAUDE_SKILLS_DIR"] = str(override)
+            try:
+                resolved = updater.resolve_claude_settings_dir()
+            finally:
+                if old is None:
+                    os.environ.pop("PAPERSPINE_CLAUDE_SKILLS_DIR", None)
+                else:
+                    os.environ["PAPERSPINE_CLAUDE_SKILLS_DIR"] = old
+            self.assertEqual(resolved, override.parent)
+            self.assertNotEqual(resolved, Path.home() / ".claude")
 
 
 if __name__ == "__main__":

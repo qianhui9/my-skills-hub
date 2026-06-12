@@ -13,10 +13,9 @@ import json
 import re
 import sys
 from collections import Counter
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Iterable
-
 
 SUPPORTED_SUFFIXES = {".txt", ".md", ".tex"}
 

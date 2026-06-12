@@ -2,8 +2,14 @@
 
 [中文](README.md) | [English](README.en.md)
 
+> 📢 **Maintenance paused (temporary) · 暂停维护**
+> The author is heavily occupied and will be largely offline until **early July**. Issues / PRs / discussions may be delayed — queued, not ignored. Thanks for your patience 🙏
+> 作者近期非常忙，**7 月初**前暂停日常维护，Issue / PR / 讨论会延迟回复，届时统一处理。感谢理解与支持 🙏
+
 
 [**PaperSpine 使用讲解视频（Bilibili）**](https://www.bilibili.com/video/BV1rjVa6ZEYu)
+
+[**🌍 Stargazer Atlas · see which universities and cities use PaperSpine**](https://wubing2023.github.io/PaperSpine/)
 
 
 PaperSpine is a motivation-driven paper and report writing skill suite for Codex, Claude Code, and OpenClaw.
@@ -32,10 +38,8 @@ PaperSpine/
         paper-spine-translate/
         paper-spine-humanize/
         paper-spine-update/
-      commands/                 # Claude Code slash-command helpers
+      commands/                 # Claude Code slash-command entry point
         paperspine.md
-        paper-spine.md
-        paperspine-legacy.md
     openclaw/
       skills/                   # OpenClaw flat skill suite
   src/

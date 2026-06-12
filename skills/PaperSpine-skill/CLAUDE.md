@@ -10,13 +10,15 @@ matrix, then writes/rewrites with LaTeX/PDF output.
 ## Repository Shape
 
 - `dist/claude/skills/*`: Claude Code flat skill suite (12 skills)
-- `dist/claude/commands/*.md`: Claude Code slash commands (3 commands)
+- `dist/claude/commands/*.md`: Claude Code slash command (`paperspine.md`, single entry point)
 - `dist/codex/skills/*`: Codex flat skill suite
 - `dist/codex/paper-spine`: legacy Codex bundled fallback
+- `dist/codex/prompts/*.md`: Codex custom prompts (`/paperspine` slash command)
 - `dist/openclaw/skills/*`: OpenClaw flat skill suite
 - `src/scripts/*`: shared deterministic scripts (standard library only)
+- `src/references/*`: shared workflow reference docs (single source; includes `interactive-intake.md`)
 - `.claude-plugin/*`: Claude Code plugin metadata
-- `tests/*`: 123 tests
+- `tests/*`: 165 tests
 
 ## Suite Skills
 
@@ -43,9 +45,13 @@ Canonical source: `dist/paperspine_version.json`.  Auto-propagated to
 
 - Standard library only for Python scripts
 - Keep dist copies synchronized across Claude/Codex/OpenClaw
-- README.md and README.zh-CN.md must stay content-equivalent
+- README.md (Chinese) and README.en.md (English) must stay content-equivalent
 - Do not push to GitHub unless explicitly asked
-- Run `python -m pytest tests` before claiming ready (expect 123 passed)
+- Run `python -m pytest tests` before claiming ready (expect 165 passed)
+- Single source of truth: edit shared scripts in `src/scripts/`, references in
+  `src/references/`, and each skill's `SKILL.md` in its **Claude** dist copy
+  (`dist/claude/skills/<skill>/SKILL.md`); `sync_local_installs.py --dist-only`
+  fans these out to Codex/OpenClaw. Never hand-edit dist copies one by one.
 
 ## Sync Commands
 

@@ -11,7 +11,7 @@ Generate publishable research ideas for: $ARGUMENTS
 
 ## Overview
 
-Given a broad research direction from the user, systematically generate, validate, and rank concrete research ideas. This skill composes with `/research-lit`, `/novelty-check`, and `/research-review` to form a complete idea discovery pipeline.
+Given a broad research direction from the user, systematically generate, validate, and rank concrete research ideas. Standalone, Phase 1's landscape survey is **inline** (WebSearch — it does not invoke `/research-lit`); Phases 4-5 invoke `/novelty-check`, `/run-experiment`, and `/monitor-experiment` for validation and pilots. For the full sub-skill pipeline (`/research-lit` → idea generation → `/novelty-check` → `/research-review`), run `/idea-discovery` (Workflow 1), which orchestrates this skill.
 
 ## Constants
 
@@ -174,6 +174,8 @@ Note: Skip this phase if the ideas are purely theoretical or if no GPU is availa
 
 Write a structured report to `idea-stage/IDEA_REPORT.md`:
 
+**Lead every recommended idea with its method, in plain language.** Before any hypothesis, novelty score, or claim, state in 2–4 concrete steps what we actually build / train / run — no jargon, no claim-IDs. The reader must understand *what we do* before *what we claim*; claims (hypothesis, validation, expected outcome) come after and read as the method's acceptance criteria.
+
 ```markdown
 # Research Idea Report
 
@@ -187,6 +189,7 @@ Write a structured report to `idea-stage/IDEA_REPORT.md`:
 ## Recommended Ideas (ranked)
 
 ### Idea 1: [title]
+- **Method (what we actually do)**: [2–4 concrete steps in plain language — what we build / train / run. No jargon, no claim-IDs, no hypothesis yet. Lead with this so the reader grasps the approach first.]
 - **Hypothesis**: [one sentence]
 - **Minimum experiment**: [concrete description]
 - **Expected outcome**: [what success/failure looks like]

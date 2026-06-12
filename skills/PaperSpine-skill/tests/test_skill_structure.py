@@ -3,7 +3,6 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 SUITE_SKILLS = [
     "paper-spine",
@@ -195,6 +194,23 @@ class SkillStructureTests(unittest.TestCase):
                 if fragment in text:
                     offenders.append(str(path.relative_to(ROOT)))
                     break
+        self.assertEqual(offenders, [])
+
+    def test_no_control_char_corruption_in_text_files(self) -> None:
+        # Guards against escaping bugs that mangle backslash content while
+        # authoring SKILL.md/references (e.g. "\r"->CR, "\a"->BEL), which silently
+        # corrupts LaTeX command guidance like \ref/\autoref.
+        text_suffixes = {".md", ".py", ".sh", ".ps1", ".json", ".yaml", ".yml", ".toml"}
+        control_chars = ("\a", "\b", "\f", "\v")
+        offenders: list[str] = []
+        for path in ROOT.rglob("*"):
+            if not path.is_file() or path.suffix.lower() not in text_suffixes:
+                continue
+            if ".git" in path.parts or "paper_rewriting_output" in path.parts:
+                continue
+            text = path.read_text(encoding="utf-8", errors="ignore")
+            if any(ch in text for ch in control_chars):
+                offenders.append(str(path.relative_to(ROOT)))
         self.assertEqual(offenders, [])
 
     def test_skill_metadata_files_have_no_utf8_bom(self) -> None:

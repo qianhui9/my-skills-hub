@@ -8,7 +8,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -300,6 +299,56 @@ class IntakeWizardTests(unittest.TestCase):
         self.assertNotIn("锟", result.stdout)
         self.assertNotIn("鐩", result.stdout)
         self.assertNotIn("鍏", result.stdout)
+
+    def test_preview_frame_has_no_raw_ansi_escapes(self) -> None:
+        # color=False preview must not leak escape codes (legacy-console safety).
+        result = subprocess.run(
+            [
+                sys.executable,
+                "src/scripts/intake_wizard.py",
+                "--preview-keyboard-frame",
+                "--preview-width",
+                "118",
+                "--workflow",
+                "build_from_materials",
+                "--scene",
+                "competition",
+                "--tier",
+                "pro",
+            ],
+            cwd=ROOT,
+            env={**os.environ, "PYTHONUTF8": "1"},
+            text=True,
+            encoding="utf-8",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+        self.assertNotIn("\x1b[", result.stdout)
+
+
+class ConsoleSetupTests(unittest.TestCase):
+    def _import(self):
+        sys.path.insert(0, str(ROOT / "src" / "scripts"))
+        import intake_wizard  # noqa: PLC0415
+
+        return intake_wizard
+
+    def test_configure_console_never_raises(self) -> None:
+        wizard = self._import()
+        # No-op on non-Windows / non-tty; must not raise on any platform.
+        wizard.configure_windows_console()
+        self.assertTrue(hasattr(wizard, "_enable_windows_vt"))
+
+    def test_ansi_respects_disabled_flag(self) -> None:
+        wizard = self._import()
+        original = wizard._ANSI_ENABLED
+        try:
+            wizard._ANSI_ENABLED = False
+            self.assertEqual(wizard.ansi("hi", "31"), "hi")
+        finally:
+            wizard._ANSI_ENABLED = original
 
 
 if __name__ == "__main__":

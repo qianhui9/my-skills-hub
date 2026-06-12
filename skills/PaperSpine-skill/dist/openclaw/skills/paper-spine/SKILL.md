@@ -1,6 +1,6 @@
 ---
 name: paper-spine
-description: Internal orchestrator — users should use /paperspine to start a full workflow.
+description: Write, rewrite, or build a paper or report (journal, conference, report, review, competition) end to end, then output LaTeX/PDF/Word. The main PaperSpine entry point that orchestrates every step.
 ---
 
 # PaperSpine Orchestrator
@@ -57,6 +57,15 @@ Required fields:
    available. The wizard is the supported Claude Code/Codex command-line UI.
    In Claude Code, `/paperspine` is the preferred entry: it launches the
    external intake window automatically when configuration is missing.
+
+   **Codex hard constraint (do not skip):** when
+   `paper_rewriting_output/paper_spine_config.json` is missing, the FIRST tool
+   action after reading this skill MUST be to run the absolute
+   `launch_paperspine_ui.ps1` (resolve under `~/.codex/skills/...` or
+   `~/.claude/skills/...`) with `sandbox_permissions: require_escalated` so the
+   window can open. Do NOT inspect materials, infer defaults, create config
+   files, or continue the workflow before the UI has launched or explicitly
+   failed. Only fall back to numbered/chat intake if the launch returns an error.
 2. Always create or verify `source_map.md`.
 3. Always use `paper-spine-research` before choosing the final motivation.
    Research must first index local/default references according to
@@ -194,8 +203,7 @@ directly.
 Claude Code and Codex do not guarantee a native graphical picker for skills.
 The supported UI is the bundled terminal wizard. When configuration is missing,
 run `paper-spine-intake`. In Claude Code, `/paperspine` must launch the intake
-UI automatically; do not ask the user to call a separate UI command. The legacy
-`/paperspine-legacy` command may be used only as a manual fallback. The launcher
+UI automatically; do not ask the user to call a separate UI command. The launcher
 opens the bundled terminal TUI, which supports Up/Down for option values,
 Left/Right for fields, Enter for edit or confirm, and `S` to save. Claude Code
 does not currently provide third-party skills with an API for embedding a custom

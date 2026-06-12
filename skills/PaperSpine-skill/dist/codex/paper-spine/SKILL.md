@@ -190,8 +190,7 @@ directly.
 Claude Code and Codex do not guarantee a native graphical picker for skills.
 The supported UI is the bundled terminal wizard. When configuration is missing,
 run `paper-spine-intake`. In Claude Code, `/paperspine` must launch the intake
-UI automatically; do not ask the user to call a separate UI command. The legacy
-`/paperspine-legacy` command may be used only as a manual fallback. The launcher
+UI automatically; do not ask the user to call a separate UI command. The launcher
 opens the bundled terminal TUI, which supports Up/Down for option values,
 Left/Right for fields, Enter for edit or confirm, and `S` to save. Claude Code
 does not currently provide third-party skills with an API for embedding a custom
