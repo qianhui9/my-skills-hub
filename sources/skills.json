@@ -59,6 +59,15 @@
       "source_subdir": ".",
       "target_dir": "skills/GordenSuperPPTSkills",
       "exclude": [".git", ".github", "node_modules", "__pycache__", ".DS_Store"]
+    },
+    {
+      "name": "image-to-editable-ppt-skill",
+      "enabled": true,
+      "repo": "https://github.com/ningzimu/image-to-editable-ppt-skill.git",
+      "ref": "main",
+      "source_subdir": ".",
+      "target_dir": "skills/image-to-editable-ppt-skill",
+      "exclude": [".git", ".github", "node_modules", "__pycache__", ".DS_Store"]
     }
   ]
 }
