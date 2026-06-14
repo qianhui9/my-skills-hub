@@ -8,16 +8,12 @@
 <table>
   <tr>
     <td align="center">
-      <b></b><br>
-      <img width="400" alt="232c0c2e87d7e52eb9cebff6dea41382" src="https://github.com/user-attachments/assets/078bd8df-9715-413a-b243-3d1519c5936d" />
+      <b>6.17投资交流会</b><br>
+      <img width="500" alt="6.17投资交流会" src="https://github.com/user-attachments/assets/bfa8d4c4-2c99-4cb2-8534-db8dd45b3e0a" />
     </td>
     <td align="center">
       <b>个人微信</b><br>
-      <img width="400" alt="个人微信" src="https://github.com/user-attachments/assets/9e2931fb-748b-418e-97ab-0515d191633d" />
-    </td>
-    <td align="center">
-      <b>个人简介</b><br>
-      <img width="400" alt="个人简介" src="https://github.com/user-attachments/assets/4930665b-ce34-4dd1-a02a-fb03b3673046" />
+      <img width="500" alt="个人微信" src="https://github.com/user-attachments/assets/9e2931fb-748b-418e-97ab-0515d191633d" />
     </td>
   </tr>
 </table>
@@ -249,6 +245,7 @@ In that case:
 | [`nature-reader`](skills/nature-reader/README.md) | Beta | Full-paper bilingual Markdown reader with source anchors and figure grounding | "nature reader", "full markdown", "paper md", "原文对照", "图文对应", "全文翻译" |
 | [`nature-response`](skills/nature-response/README.md) | Beta | Point-by-point reviewer response letters with comment triage, action mapping, and risk checks | "response to reviewers", "rebuttal letter", "major revision", "审稿意见回复" |
 | [`nature-paper2ppt`](skills/nature-paper2ppt/README.md) | Beta | Chinese PPTX decks from scientific papers | "paper PPT", "journal club", "paper to slides", "paper presentation" |
+| [`nature-paper-to-patent`](skills/nature-paper-to-patent/README.md) | Beta | Evidence-grounded Chinese invention patent drafts from research papers | "paper to patent", "Chinese patent", "claims drafting", "论文转专利", "权利要求书" |
 | [`nature-academic-search`](skills/nature-academic-search/README.md) | Beta | Multi-source literature search, citation verification, and reference management | "search papers", "find articles", "academic search", "literature search", "verify DOI" |
 
 > **Adding a new skill?** Follow the [contribution guide](#adding-a-new-skill) at the bottom of this file.
@@ -625,6 +622,54 @@ skills/nature-paper2ppt/
     ├── figure-assets.md
     └── self-review.md
 ```
+
+---
+
+## nature-paper-to-patent
+
+**What it does** — Converts scientific papers, theses, technical reports,
+source code, figures, and inventor notes into evidence-grounded Chinese
+invention patent drafts. It supports complete application packages,
+claim-only drafting, technical disclosure analysis, and paper-patent
+comparison.
+
+The skill creates stable source IDs for paper text, equations, figures, and
+supplementary evidence; builds an evidence ledger before claim drafting; maps
+material claim features to source evidence; preserves core equations as
+editable Office Math; and generates claim-aligned patent flowcharts.
+
+**Key rules enforced**
+
+| Domain | Core rule |
+|--------|-----------|
+| Evidence | Every material claim feature maps to paper, equation, figure, code, or supplementary evidence |
+| Claims | Unsupported features are excluded; unresolved facts become inventor questions |
+| Equations | Source-supported core equations remain editable Office Math with symbol definitions |
+| Figures | The principal method flowchart follows the independent claim and ends with a specific technical output |
+| Deliverables | Produce separate Chinese claims, specification, abstract, abstract-figure, and combined-review DOCX files |
+| Validation | Check claim structure, traceability, terminology, equation coverage, figure alignment, and quality gates |
+
+**Reference files and tools**
+
+```text
+skills/nature-paper-to-patent/
+├── README.md
+├── SKILL.md
+├── manifest.yaml
+├── requirements.txt
+├── static/
+├── references/
+├── scripts/
+├── evals/
+└── tests/
+```
+
+The formal documents are drafting aids for inventor and qualified Chinese
+patent-professional review. The skill does not provide patentability,
+novelty, inventorship, ownership, infringement, or filing-readiness opinions.
+
+Standalone development repository:
+[`snipp-zha/Paper-to-patent-Skill`](https://github.com/snipp-zha/Paper-to-patent-Skill).
 
 ---
 

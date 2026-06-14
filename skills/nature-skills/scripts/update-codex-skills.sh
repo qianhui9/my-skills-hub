@@ -3,7 +3,7 @@
 # update-codex-skills.sh — install / update Nature Skills into Codex.
 #
 # Codex loads skills from ~/.codex/skills/. This script copies every skill
-# folder shipped in this repository's skills/ directory (the 10 nature-*
+# folder shipped in this repository's skills/ directory (the nature-*
 # skills plus the shared _shared/ dir) into that location.
 #
 # It is intended for users who install the skills by manual copy rather than
