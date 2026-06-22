@@ -1,37 +1,25 @@
-# `nature-paper-to-patent` skill
+# `nature-paper-to-patent` 技能
 
-An evidence-grounded workflow for converting scientific papers, theses,
-technical reports, source code, figures, and inventor notes into structured
-Chinese invention patent drafts.
+`nature-paper-to-patent` 是一个有证据约束的工作流，用于把科研论文、学位论文、技术报告、源代码、图表和发明人笔记转换为结构化中国发明专利草稿。
 
-The skill is designed for graduate students, university researchers, and
-technical teams. It produces formal patent documents in Chinese while keeping
-agent-facing analysis and routing instructions portable across AI agents.
+该技能面向研究生、高校科研人员和技术团队。它生成中文正式专利文档，同时让面向 agent 的分析和路由说明保持可跨 AI agent 迁移。
 
-## What it does
+## 功能
 
-- maps paper text, equations, figures, code, and supplementary evidence to
-  stable source IDs
-- extracts the technical problem, cooperating technical means, implementation
-  chain, and specific technical output
-- builds an evidence ledger before drafting claims
-- maps every material claim feature to source evidence
-- supports full drafts, claim-only drafting, disclosure analysis, and
-  paper-patent comparison
-- handles selectable PDFs, scanned PDFs, pasted text, and mixed project folders
-- routes algorithm/software, apparatus/system, process/material, and mixed
-  inventions to different drafting rules
-- preserves source-supported core formulas and renders them as editable Office
-  Math in DOCX
-- generates claim-aligned black-and-white flowcharts as SVG and PNG
-- reuses the principal claim flowchart as both the abstract figure and a
-  specification figure
-- produces separate Chinese DOCX files for claims, specification, abstract,
-  abstract figure, and a combined review draft
-- validates claim structure, evidence traceability, equation coverage, figure
-  alignment, terminology consistency, and quality thresholds
+- 将论文正文、公式、图表、代码和补充证据映射到稳定 source ID。
+- 提取技术问题、协同技术手段、实施链条和具体技术输出。
+- 在起草权利要求前建立 evidence ledger。
+- 将每个实质性权利要求特征映射到来源证据。
+- 支持完整草案、仅权利要求、技术交底分析和 paper-patent comparison。
+- 处理可选中文本 PDF、扫描 PDF、粘贴文本和混合项目文件夹。
+- 将算法/软件、装置/系统、工艺/材料和混合型发明路由到不同起草规则。
+- 保留来源支持的核心公式，并在 DOCX 中渲染为可编辑 Office Math。
+- 生成与权利要求对齐的黑白流程图 SVG 和 PNG。
+- 复用主权利要求流程图作为摘要附图和说明书附图。
+- 分别生成中文 DOCX：权利要求书、说明书、说明书摘要、摘要附图和完整审阅稿。
+- 校验权利要求结构、证据可追溯性、公式覆盖、附图对齐、术语一致性和质量阈值。
 
-## File structure
+## 文件结构
 
 ```text
 nature-paper-to-patent/
@@ -69,66 +57,57 @@ nature-paper-to-patent/
     └── test_validation.py
 ```
 
-## Routing model
+## 路由模型
 
-The short `SKILL.md` acts as a router. `manifest.yaml` selects only the
-fragments needed for the current request:
+短 `SKILL.md` 作为路由器。`manifest.yaml` 只选择当前请求需要的片段：
 
-- `source_format`: `pdf-text`, `scanned-pdf`, `pasted-text`, or
-  `mixed-project`
-- `task_mode`: `full-draft`, `claim-set`, `disclosure-analysis`, or
-  `paper-patent-audit`
-- `invention_type`: `algorithm-software`, `apparatus-system`,
-  `process-material`, or `mixed`
+- `source_format`：`pdf-text`、`scanned-pdf`、`pasted-text` 或 `mixed-project`
+- `task_mode`：`full-draft`、`claim-set`、`disclosure-analysis` 或 `paper-patent-audit`
+- `invention_type`：`algorithm-software`、`apparatus-system`、`process-material` 或 `mixed`
 
-The always-loaded core defines evidence discipline, the staged drafting
-workflow, and the output contract.
+始终加载的 core 定义证据纪律、分阶段起草工作流和输出契约。
 
-## Default workflow
+## 默认工作流
 
-1. Record inputs, publication status, inventorship questions, and ownership
-   questions.
-2. Build a full-document source map.
-3. Build terminology, formula, figure, and input-operation-output inventories.
-4. Build the evidence ledger.
-5. Form the invention concept and claim strategy.
-6. Draft and audit claims.
-7. Align the specification, equations, figures, embodiments, and abstract.
-8. Validate and build the complete application package.
+1. 记录输入、发表状态、发明人问题和权属问题。
+2. 建立全文 source map。
+3. 建立术语、公式、图表和输入-操作-输出清单。
+4. 建立 evidence ledger。
+5. 形成发明构思和权利要求策略。
+6. 起草并审查权利要求。
+7. 对齐说明书、公式、附图、实施例和摘要。
+8. 校验并生成完整申请文件包。
 
-Each stage has an explicit gate. Unsupported features are excluded from formal
-claims, and unresolved facts are retained as inventor questions instead of
-being invented.
+每个阶段都有明确 gate。无支撑特征会被排除在正式权利要求之外，未解决事实会保留为发明人问题，而不会被编造。
 
-## Installation
+## 安装
 
-Install the complete directory, not only `SKILL.md`, because the router depends
-on `manifest.yaml`, `static/`, `references/`, and `scripts/`.
+安装完整目录，而不是只安装 `SKILL.md`，因为路由器依赖 `manifest.yaml`、`static/`、`references/` 和 `scripts/`。
 
-Install dependencies:
+安装依赖：
 
 ```bash
 python -m pip install -r requirements.txt
 ```
 
-Run automated checks:
+运行自动检查：
 
 ```bash
 python -m unittest discover -s tests -v
 ```
 
-## Example request
+## 示例请求
 
 ```text
-Read and follow the nature-paper-to-patent skill.
-Analyse paper/paper.pdf and generate a Chinese invention patent draft.
-Create separate Chinese claims, specification, abstract, and abstract-figure
-DOCX files. Preserve the source-supported core equations as editable Office
-Math, generate a claim-aligned main flowchart and methodology figures, and map
-every material claim feature to its source evidence.
+请读取并遵循 nature-paper-to-patent 技能。
+分析 paper/paper.pdf，并生成中国发明专利草稿。
+请分别创建中文权利要求书、说明书、说明书摘要和摘要附图 DOCX 文件。
+保留来源支持的核心公式，并以可编辑 Office Math 呈现；
+生成与权利要求对齐的主流程图和方法附图；
+将每个实质性权利要求特征映射到来源证据。
 ```
 
-## Default deliverables
+## 默认交付物
 
 ```text
 outputs/
@@ -145,19 +124,12 @@ outputs/
     └── figure-1.png
 ```
 
-## Status and limits
+## 状态与边界
 
-Status: **Beta**.
+状态：**Beta**。
 
-The deterministic validation scripts and synthetic tests cover claim mapping,
-core-equation requirements, figure generation, editable Office Math, and DOCX
-packaging. The output remains a drafting aid. It is not a patentability,
-novelty, inventorship, ownership, infringement, or filing-readiness opinion,
-and it requires inventor confirmation and qualified Chinese patent
-professional review.
+确定性校验脚本和合成测试覆盖权利要求映射、核心公式要求、附图生成、可编辑 Office Math 和 DOCX 打包。输出仍是起草辅助材料，不构成专利性、新颖性、发明人资格、权属、侵权或可提交性意见；正式使用前需要发明人确认，并由合格中国专利专业人员审阅。
 
-Contributed by
-[`snipp-zha`](https://github.com/snipp-zha).
+贡献者：[`snipp-zha`](https://github.com/snipp-zha)。
 
-The standalone development repository is
-[`snipp-zha/Paper-to-patent-Skill`](https://github.com/snipp-zha/Paper-to-patent-Skill).
+独立开发仓库：[`snipp-zha/Paper-to-patent-Skill`](https://github.com/snipp-zha/Paper-to-patent-Skill)。
