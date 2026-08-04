@@ -1,13 +1,15 @@
 ---
 name: paper-poster-html
 description: "DEFAULT poster pipeline — build an academic conference poster (ICML/NeurIPS/ICLR/CVPR/...) as a single HTML/CSS file with measurement-driven hard gates, real paper figures, a two-hue design-token system, and print-ready PDF via headless Chromium. Use when the user says \"做海报\", \"poster\", \"conference poster\", \"paper poster\", or asks to design/redo a research poster."
-argument-hint: [paper-dir-or-pdf] [— venue: ICLR, canvas: 185x90cm landscape, venue-colors: true]
+argument-hint: "[paper-dir-or-pdf] [— venue: ICLR, canvas: 185x90cm landscape, venue-colors: true]"
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, mcp__gemini-review__review, mcp__gemini-review__review_start, mcp__gemini-review__review_reply_start, mcp__gemini-review__review_status
 ---
 
 > Override for Codex users who want **Gemini**, not a second Codex/Codex-MCP reviewer, to act as the reviewer. Install this package **after** `skills/skills-codex/*`.
 
 # Paper Poster (HTML): measurement-gated poster generation
+
+> **Gemini overlay assurance:** `review_independence: cross-family` and `acceptance_status: accepted`.
 
 One HTML file styled for an exact print canvas (`@page { size: W H }`), rendered to PDF
 via Playwright print emulation. **Iterate by measuring, not eyeballing** — the screen

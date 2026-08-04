@@ -2,7 +2,7 @@
 
 > **For AI agents reading this repo cold.** If you are a human, see [README.md](README.md) or [docs/ARIS_INTRO.html](https://wanshuiyin.github.io/Auto-claude-code-research-in-sleep/ARIS_INTRO.html).
 
-ARIS is a research harness: composable Markdown skills that orchestrate the ML research lifecycle through cross-model adversarial collaboration. Executor (Claude / Codex / Cursor / Antigravity / Copilot CLI) writes code & papers; reviewer (GPT-5.5 via Codex MCP, or Claude / Gemini via `claude-review` / `gemini-review` MCP) critiques in fresh threads.
+ARIS is a research harness: composable Markdown skills that orchestrate the ML research lifecycle through cross-model adversarial collaboration. Executor (Claude / Codex / Cursor / Antigravity / Copilot CLI) writes code & papers; reviewer (GPT-5.6-Sol via Codex MCP, or Claude / Gemini via `claude-review` / `gemini-review` MCP) critiques in fresh threads.
 
 > **Source of Truth.** This file is a *routing index*, not a specification.
 > Behavior of a skill lives in `skills/<name>/SKILL.md`. System-wide
@@ -18,7 +18,13 @@ ARIS is a research harness: composable Markdown skills that orchestrate the ML r
 | Codex + Claude-review | `skills/skills-codex-claude-review/` | Overlay on top of `skills-codex/` |
 | Codex + Gemini-review | `skills/skills-codex-gemini-review/` | Same pattern, Gemini reviewer |
 
-**Full catalog**: [`docs/SKILLS_CATALOG.md`](docs/SKILLS_CATALOG.md) — **79 skills**, grouped by role.
+Codex base review is a fresh same-family `spawn_agent` review. It may drive and
+complete workflows but records `review_independence: same-family` and
+`acceptance_status: provisional`. Claude/Gemini overlays or deterministic
+verifiers may record accepted; never describe base Codex self-review as
+cross-model acceptance.
+
+**Full catalog**: [`docs/SKILLS_CATALOG.md`](docs/SKILLS_CATALOG.md) — **82 skills**, grouped by role.
 
 Invocation syntax is identical across hosts:
 ```
@@ -35,7 +41,7 @@ ARIS has **two independent control axes** plus scoped flags.
 — effort: lite | balanced | max | beast      # default: balanced
 ```
 
-Controls how many papers / ideas / rounds / pilots. Codex reasoning is **always `xhigh`** regardless of effort.
+Controls how many papers / ideas / rounds / pilots. Codex reasoning never drops below the tier floor regardless of effort (regular reviews `xhigh`; the deep-audit skills run `ultra` — see `skills/shared-references/reviewer-routing.md`).
 
 ### Axis 2 — `assurance` (audit strictness, independent of effort)
 
@@ -166,13 +172,13 @@ Advisory CI lint at `.github/workflows/lint-skills-helpers.yml` flags hardcoded 
 ## Cross-Model Protocol
 
 - **Executor** (Claude / Codex / Cursor / Antigravity / Copilot): writes code, runs experiments, drafts papers
-- **Reviewer** (GPT-5.5 via Codex MCP, default; or Claude / Gemini via `*-review` MCP overlays): critiques, scores, demands revisions
+- **Reviewer** (GPT-5.6-Sol via Codex MCP, default; or Claude / Gemini via `*-review` MCP overlays): critiques, scores, demands revisions
 - **Rule**: executor and reviewer **must** be different model families. Same-family review is a non-feature.
 - **Reviewer independence**: pass file paths only, never summaries or interpretations
 - **Thread freshness**: every reviewer call uses `mcp__codex__codex` (or equivalent), **never** `codex-reply` — narrative accumulation inflates scores
 - **Experiment integrity**: executor must NOT judge its own eval code — reviewer audits directly per [`shared-references/experiment-integrity.md`](skills/shared-references/experiment-integrity.md)
 
-Default reviewer model is `gpt-5.5` (runtime since 2026-04-24; docs aligned 2026-05-14). Legacy `gpt-5.4` available as `--- reviewer-model: gpt-5.4`. Oracle Pro tier (`gpt-5.5-pro`) via `--- reviewer: oracle-pro` is a separate routing path.
+Default reviewer model is `gpt-5.6-sol` with two-tier reasoning (deep-audit `ultra` / regular `xhigh`, since 2026-07-10; needs codex-cli ≥ 0.144.1). `gpt-5.5` is the capability fallback; legacy `gpt-5.4` available as `--- reviewer-model: gpt-5.4`. Oracle Pro tier (`gpt-5.5-pro`) via `--- reviewer: oracle-pro` is a separate routing path.
 
 ## Shared References
 

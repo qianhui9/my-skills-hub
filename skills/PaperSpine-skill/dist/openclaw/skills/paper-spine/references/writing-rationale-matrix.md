@@ -88,8 +88,23 @@ should be traceable to the original logic map and/or a deliberate structural
 change. For build-from-materials tasks, each row should be traceable to the
 source inventory, evidence bank, claim register, or figure asset map.
 
-After drafting, update the `Final Text Check` column with the final location or
-a short pass/fail note.
+**Scaffolding stays internal (fourth-wall rule).** The matrix's reasoning
+columns — the motivation link, the "close-the-supervisor/reviewer-comment"
+justifications, the planned structural moves, and any `A -> B -> C` throughline —
+are PLANNING NOTATION. Draft *from* them, but never copy them into the
+manuscript. The reader-facing prose must never name the writing process, a
+supervisor or reviewer, their comments/feedback, an earlier or previous draft,
+or narrate that the paper was "reorganized/restructured" to address anything.
+A sentence like "针对导师对前期初稿的审阅意见，本文沿一条主线重新组织：…→…→…" is
+a leak of this matrix row into the body — render it instead as a direct
+motivation statement. `integrity_audit.py` hard-fails such process language.
+
+After drafting, update the `Final Text Check` column. The value must start with
+`PASS` or `FAIL`, then give the final location or the reason it still fails.
+Examples: `PASS: Section 2 paragraph 3 now states the claim after citation C12.`
+or `FAIL: no verified citation yet for this mechanism claim.` Values that only
+say a location, "done", or a vague note do not pass audit.
+
 ## Detail Standard
 
 A row should be detailed enough that the user can learn the writing logic from
@@ -113,4 +128,4 @@ The whole-work row should look more like a design memo than a TODO item:
 
 | Row ID | Manuscript Unit | Current Problem or Planned Function | Motivation Link | Reference/SOTA Pattern Learned | Target Scene or Venue Norm | User Evidence or Citation Anchor | Planned Change/Text Move | Final Text Check |
 |---|---|---|---|---|---|---|---|---|
-| F1 | Whole-work framework | Decide the paper's controlling argument before editing any paragraph. The current draft may contain multiple valid technical points, but the paper needs one dominant contribution and a sequence of evidence that makes that contribution inevitable. | The confirmed motivation becomes the spine: the paper first exposes the missing signal or unresolved evaluation problem, then shows why the proposed design is needed, then lets results test that promise. Secondary engineering choices are positioned as enabling mechanisms, not competing innovations. | Learn from SOTA and target examples at the level of structure: how they stage gap, design rationale, evidence order, failure modes, and bounded discussion. Do not copy wording; transfer the move that makes the reader accept why this paper had to be written. | The target scene expects a recognizable argument architecture. A journal paper may need IMRaD and independent evaluation; a competition report may need assumptions, model logic, validation, sensitivity, and recommendations; a course report may need rubric-visible evidence. | Anchor the framework to the user's actual draft/materials: source_map.md, evidence_bank.md, figures/tables, citations, experiment settings, claim register, and any special requirements. External papers only teach writing logic. | Reframe the manuscript so every major section answers one part of the same question. Move background, method rationale, results interpretation, captions, and discussion claims until the evidence sequence is visible. | Pass only if a reader can summarize the paper's problem, gap, design, evidence, limitation, and implication from the ordered section openings and captions without seeing unsupported claims. |
+| F1 | Whole-work framework | Decide the paper's controlling argument before editing any paragraph. The current draft may contain multiple valid technical points, but the paper needs one dominant contribution and a sequence of evidence that makes that contribution inevitable. | The confirmed motivation becomes the spine: the paper first exposes the missing signal or unresolved evaluation problem, then shows why the proposed design is needed, then lets results test that promise. Secondary engineering choices are positioned as enabling mechanisms, not competing innovations. | Learn from SOTA and target examples at the level of structure: how they stage gap, design rationale, evidence order, failure modes, and bounded discussion. Do not copy wording; transfer the move that makes the reader accept why this paper had to be written. | The target scene expects a recognizable argument architecture. A journal paper may need IMRaD and independent evaluation; a competition report may need assumptions, model logic, validation, sensitivity, and recommendations; a course report may need rubric-visible evidence. | Anchor the framework to the user's actual draft/materials: source_map.md, evidence_bank.md, figures/tables, citations, experiment settings, claim register, and any special requirements. External papers only teach writing logic. | Reframe the manuscript so every major section answers one part of the same question. Move background, method rationale, results interpretation, captions, and discussion claims until the evidence sequence is visible. | PASS: Reader can summarize the paper's problem, gap, design, evidence, limitation, and implication from ordered section openings and captions without unsupported claims. |

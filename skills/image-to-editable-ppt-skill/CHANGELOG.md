@@ -6,7 +6,35 @@ Release notes are generated from this file. Keep changelog entries in English.
 
 ### Documentation
 
-- Fix README rendering for the Codex Full Access recommendation callout.
+- Add complete Korean README and English and Korean versions of the Docsify usage documentation, with synchronized language navigation, search, and pagination. (#26)
+- Align all usage guides with the built-in-first image backend policy and block delivery when compliant image assets cannot be produced. (#26)
+- Add compact documentation, Telegram, and issue support links to all README language versions, and remove the obsolete community QR code. (#28, #29)
+
+## 0.3.2
+
+### Features
+
+- Prefer the agent built-in `image_gen.imagegen` tool for image generation and editing, with explicit fallback to Codex OAuth and then an OpenAI-compatible API only for defined failure conditions, while recording the actual producing backend. (#22)
+
+### Fixes
+
+- Scope `editppt image process-sheet` intermediate images and split reports by job id, and reject an existing alpha output before copying a new source sheet. (#22)
+- Translate manifest text alignment values to valid DrawingML enums, center preview text within its box, and reject unsupported alignment values during page validation. (#17)
+
+### Documentation
+
+- Add an investment-platform before-and-after example to both READMEs. (#23)
+- Add a docsify-based documentation site under `docs/` (home, quickstart, design, installation, workflow, FAQ, prompts) served via GitHub Pages, and link it from both READMEs. (#18)
+
+## 0.3.1
+
+### Improvements
+
+- Align Codex OAuth image requests with Codex built-in image generation by setting `background=auto` and retrying transport or 5xx failures with Codex-style backoff while leaving rate limits non-retried. (#15)
+
+### Documentation
+
+- Fix README rendering for the Codex Full Access recommendation callout. (#15)
 
 ## 0.3.0
 

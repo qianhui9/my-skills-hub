@@ -24,7 +24,7 @@ Unlike posters (single page, visual-first), slides tell a **temporal story**: ea
 - **SPEAKER_NOTES = true** — Generate `\note{}` blocks in beamer and corresponding PPTX notes. Set `false` for clean slides without notes.
 - **PAPER_DIR = `paper/`** — Directory containing the compiled paper.
 - **OUTPUT_DIR = `slides/`** — Output directory for all slide files.
-- **REVIEWER_MODEL = `gpt-5.5`** — Model used via Codex MCP for slide review.
+- **REVIEWER_MODEL = `gpt-5.6-sol`** — Model used via Codex MCP for slide review.
 - **AUTO_PROCEED = false** — At each checkpoint, **always wait for explicit user confirmation**.
 - **COMPILER = `latexmk`** — LaTeX build tool.
 - **ENGINE = `pdflatex`** — LaTeX engine. Use `xelatex` for CJK text.
@@ -45,12 +45,15 @@ cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" || exit 1
 if [ -z "${ARIS_REPO:-}" ] && [ -f .aris/installed-skills.txt ]; then
     ARIS_REPO=$(awk -F'\t' '$1=="repo_root"{print $2; exit}' .aris/installed-skills.txt 2>/dev/null) || true
 fi
+if [ -z "${ARIS_REPO:-}" ] && [ -f "$HOME/.aris/repo" ]; then
+    ARIS_REPO=$(cat "$HOME/.aris/repo" 2>/dev/null) || true
+fi
 STYLE_HELPER=".aris/tools/extract_paper_style.py"
 [ -f "$STYLE_HELPER" ] || STYLE_HELPER="tools/extract_paper_style.py"
 [ -f "$STYLE_HELPER" ] || { [ -n "${ARIS_REPO:-}" ] && STYLE_HELPER="$ARIS_REPO/tools/extract_paper_style.py"; }
 [ -f "$STYLE_HELPER" ] || {
-  echo "ERROR: extract_paper_style.py not resolved at .aris/tools/, tools/, or \$ARIS_REPO/tools/." >&2
-  echo "       Fix: rerun bash tools/install_aris.sh, export ARIS_REPO, or copy the helper to tools/." >&2
+  echo "ERROR: extract_paper_style.py not resolved at .aris/tools/, tools/, \$ARIS_REPO/tools/, or via ~/.aris/repo." >&2
+  echo "       Fix: rerun bash tools/install_aris.sh or smart_update.sh (refreshes ~/.aris/repo), export ARIS_REPO, or copy the helper to tools/." >&2
   echo "       --style-ref cannot be satisfied; aborting." >&2
   exit 1
 }
@@ -70,7 +73,7 @@ Sources accepted: local TeX dir / file, local PDF, arXiv id, http(s) URL. Overle
 
 - Use `style_profile.md` to align section-budget tendency and theorem-environment density. Talk-type slide count above still takes precedence.
 - **Never copy speaker-note prose, slide titles, or examples** from anything reachable through the cache. The talk content is from the user's paper, not the reference.
-- **Never pass `— style-ref` (or the cache contents) to the GPT-5.5 reviewer sub-agent** — the reviewer must judge the talk's clarity on its own merits.
+- **Never pass `— style-ref` (or the cache contents) to the GPT-5.6-Sol reviewer sub-agent** — the reviewer must judge the talk's clarity on its own merits.
 
 ## Talk Type → Slide Count
 
@@ -357,10 +360,11 @@ If page count differs significantly from outline (>2 slides off), investigate.
 
 ### Phase 5: Codex MCP Review
 
-Send the slide outline + selected LaTeX frames to GPT-5.5 xhigh:
+Send the slide outline + selected LaTeX frames to GPT-5.6-Sol xhigh:
 
 ```
 mcp__codex__codex:
+  model: gpt-5.6-sol
   config: {"model_reasoning_effort": "xhigh"}
   prompt: |
     Review this [TALK_TYPE] presentation ([TALK_MINUTES] min) for [VENUE].
@@ -564,7 +568,7 @@ The paper and code are available at the QR code on screen. I'm happy to take que
   ├── main.pdf              # Compiled slides (primary output)
   ├── presentation.pptx     # Editable PowerPoint
   ├── SLIDE_OUTLINE.md      # Slide-by-slide outline
-  ├── SLIDES_REVIEW.md      # GPT-5.5 review feedback
+  ├── SLIDES_REVIEW.md      # GPT-5.6-Sol review feedback
   ├── speaker_notes.md      # Per-slide speaker notes
   ├── TALK_SCRIPT.md        # Full word-for-word talk script + Q&A
   ├── SLIDES_STATE.json     # State persistence

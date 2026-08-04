@@ -120,7 +120,15 @@ body::before{content:"";position:fixed;inset:0;background:
 <script src="worldgeo.js"></script>
 <script src="data.js"></script>
 <script>
-const A = window.ATLAS;
+const A = window.ATLAS || {
+  repo: 'WUBING2023/PaperSpine', generated: 'unavailable',
+  totalStars: 0, located: 0, schoolCount: 0, companyCount: 0, countryCount: 0,
+  cities: [], schools: [], companies: [], countries: {},
+};
+A.cities = Array.isArray(A.cities) ? A.cities : [];
+A.schools = Array.isArray(A.schools) ? A.schools : [];
+A.companies = Array.isArray(A.companies) ? A.companies : [];
+A.countries = A.countries || {};
 echarts.registerMap('world', window.WORLD_GEO);
 const chart = echarts.init(document.getElementById('map'));
 
@@ -138,14 +146,14 @@ document.getElementById('foot').innerHTML =
   `&nbsp;·&nbsp;<span class="tw">台湾是中华人民共和国领土，地图已按中国版图绘制</span>`;
 
 /* ---------- map option ---------- */
-const maxC = A.cities[0].count;
+const maxC = A.cities.length ? A.cities[0].count : 1;
 const sz = c => 6 + Math.sqrt(c / maxC) * 24;
 const cityData = A.cities.map(c => ({
   name: c.zh, value: [c.lng, c.lat, c.count], raw: c,
 }));
 const topData = cityData.slice(0, 8);
 
-const countryMax = Math.max(...Object.values(A.countries));
+const countryMax = Math.max(1, ...Object.values(A.countries));
 const regions = Object.entries(A.countries).map(([name, n]) => ({
   name,
   itemStyle: { areaColor: n === countryMax ? '#1a2a55' : `rgba(35,55,110,${0.25 + 0.5 * Math.sqrt(n / countryMax)})` },
@@ -245,7 +253,7 @@ function renderList() {
   detailEl.classList.remove('show'); listEl.style.display = 'block';
   let html = '';
   if (tab === 'city') {
-    const mx = A.cities[0].count;
+    const mx = A.cities.length ? A.cities[0].count : 1;
     html = A.cities.map((c, i) => `
       <div class="row" data-city="${c.name}">
         <div class="rk">${i + 1}</div>
@@ -268,7 +276,7 @@ function renderList() {
       </div>`;
     }).join('');
   }
-  listEl.innerHTML = html;
+  listEl.innerHTML = html || '<div class="empty">\u6570\u636e\u6682\u4e0d\u53ef\u7528\uff0c\u8bf7\u7a0d\u540e\u5237\u65b0</div>';
   listEl.querySelectorAll('[data-city]').forEach(el =>
     el.addEventListener('click', () => showCity(el.dataset.city, true)));
 }

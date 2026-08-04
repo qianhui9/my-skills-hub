@@ -1,7 +1,7 @@
 ---
 name: experiment-queue
 description: SSH job queue for multi-seed/multi-config ML experiments with OOM-aware retry, stale-screen cleanup, and wave-transition race prevention. Use when user says "batch experiments", "队列实验", "run grid", "multi-seed sweep", "auto-chain experiments", or when /run-experiment is insufficient for 10+ jobs that need orchestration.
-argument-hint: [manifest-or-grid-spec]
+argument-hint: "[manifest-or-grid-spec]"
 allowed-tools: Bash(*), Read, Grep, Glob, Edit, Write, Skill(run-experiment), Skill(monitor-experiment)
 ---
 
@@ -46,6 +46,12 @@ Based on session audit (2026-04-16), the major wall-clock sinks in multi-seed gr
 All of these are pure engineering friction that can be orchestrated.
 
 ## Core Concepts
+
+> **Environment contract**: queue jobs assume the target env is already built
+> and validated per `../shared-references/compute-env-contract.md` (spec-hash
+> ledger + kernel witness). A wave of jobs dying at import time = the env
+> contract was skipped, not a queue bug; check the provider's
+> `.aris/compute/<provider>.md` ledger before re-queueing.
 
 ### Job Manifest
 
@@ -92,6 +98,16 @@ pending → running → completed
                  ↘ failed_other → stuck (needs manual inspection)
 stale_screen_detected → cleaned → pending
 ```
+
+> **Operator note on `stuck` (the agent's move, not the queue's):** the queue
+> deterministically parks `failed_other` jobs as `stuck` — that part is code and
+> unchanged. Before handing a `stuck` batch to the human, the OPERATING AGENT
+> should check: if the same failure repeats across jobs, try ONE clean
+> reimplement of the **agent-generated wrapper/attempt script only** — never
+> user/project source (`run_*.py` you didn't write), the manifest, queue state,
+> logs, or results (see `shared-references/external-cadence.md` § *Let a broken
+> attempt restart, not just patch*). Reserve the human handoff for
+> contract/environment doubts, not merely broken attempt code.
 
 ### Wave Orchestration
 
@@ -144,21 +160,24 @@ QUEUE_TOOLS=""
 if [ -n "${CLAUDE_SKILL_DIR:-}" ] && [ -f "$CLAUDE_SKILL_DIR/scripts/queue_manager.py" ]; then
   QUEUE_TOOLS="$CLAUDE_SKILL_DIR/scripts"
 fi
-# Layers 1-3: legacy chain via tools/experiment_queue/ shims.
+# Layers 1-4: legacy chain via tools/experiment_queue/ shims.
 if [ -z "$QUEUE_TOOLS" ]; then
   cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" || exit 1
   if [ -z "${ARIS_REPO:-}" ] && [ -f .aris/installed-skills.txt ]; then
       ARIS_REPO=$(awk -F'\t' '$1=="repo_root"{print $2; exit}' .aris/installed-skills.txt 2>/dev/null) || true
+  fi
+  if [ -z "${ARIS_REPO:-}" ] && [ -f "$HOME/.aris/repo" ]; then
+      ARIS_REPO=$(cat "$HOME/.aris/repo" 2>/dev/null) || true
   fi
   QUEUE_TOOLS=".aris/tools/experiment_queue"
   [ -f "$QUEUE_TOOLS/queue_manager.py" ] || QUEUE_TOOLS="tools/experiment_queue"
   [ -f "$QUEUE_TOOLS/queue_manager.py" ] || { [ -n "${ARIS_REPO:-}" ] && QUEUE_TOOLS="$ARIS_REPO/tools/experiment_queue"; }
   [ -f "$QUEUE_TOOLS/queue_manager.py" ] || QUEUE_TOOLS=""
 fi
-[ -z "$QUEUE_TOOLS" ] && { echo "ERROR: experiment_queue helpers not found (layer 0: \$CLAUDE_SKILL_DIR/scripts/; layers 1-3: .aris/tools/, tools/, \$ARIS_REPO/tools/). Rerun install_aris.sh, set ARIS_REPO, or copy the canonical scripts from \$ARIS_REPO/skills/experiment-queue/scripts/." >&2; exit 1; }
+[ -z "$QUEUE_TOOLS" ] && { echo "ERROR: experiment_queue helpers not found (layer 0: \$CLAUDE_SKILL_DIR/scripts/; layers 1-4: .aris/tools/, tools/, \$ARIS_REPO/tools/, \$ARIS_REPO/tools/ via ~/.aris/repo). Rerun install_aris.sh or smart_update.sh (refreshes ~/.aris/repo), set ARIS_REPO, or copy the canonical scripts from \$ARIS_REPO/skills/experiment-queue/scripts/." >&2; exit 1; }
 ```
 
-The `.aris/tools` symlink is set up by `install_aris.sh` (#174). Older installs without that symlink fall through to `tools/experiment_queue` (works if invoked from inside the ARIS repo) or `$ARIS_REPO/tools/experiment_queue`. After Phase 3.3, each of those legacy paths contains a Python `os.execv` shim that forwards to the canonical `skills/experiment-queue/scripts/` location, so existing users do not need to re-run anything.
+The `.aris/tools` symlink is set up by `install_aris.sh` (#174). Older installs without that symlink fall through to `tools/experiment_queue` (works if invoked from inside the ARIS repo), `$ARIS_REPO/tools/experiment_queue`, or the same path resolved via the global pointer file `~/.aris/repo` (#366, for installs with no project-local manifest). After Phase 3.3, each of those legacy paths contains a Python `os.execv` shim that forwards to the canonical `skills/experiment-queue/scripts/` location, so existing users do not need to re-run anything.
 
 **3b. Compute remote paths.** Use both a remote-relative form (for `scp` destinations — modern `scp` runs in SFTP mode and does NOT reliably expand `$HOME` in destination paths) and a `$HOME`-prefixed form (for `ssh ... command` strings, where remote bash WILL expand `$HOME`):
 

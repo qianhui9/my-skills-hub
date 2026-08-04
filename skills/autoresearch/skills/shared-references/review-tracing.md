@@ -31,7 +31,7 @@ Do NOT trace: purely informational LLM calls (e.g., `codex exec` for code genera
 
 ## How to Trace
 
-After each reviewer MCP call, save the trace using `save_trace.sh`,
+After each reviewer MCP call — including every FAILED attempt in a capability-fallback chain (one trace entry per attempt: `--status error` + `--fallback-reason`; the successful entry records the RESOLVED pair) — save the trace using `save_trace.sh`,
 resolved through the canonical helper chain (see
 `integration-contract.md` §2 — failure policy C, "forensic helper").
 The full invocation:
@@ -42,6 +42,9 @@ cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" || exit 1
 if [ -z "${ARIS_REPO:-}" ] && [ -f .aris/installed-skills.txt ]; then
     ARIS_REPO=$(awk -F'\t' '$1=="repo_root"{print $2; exit}' .aris/installed-skills.txt 2>/dev/null) || true
 fi
+if [ -z "${ARIS_REPO:-}" ] && [ -f "$HOME/.aris/repo" ]; then
+    ARIS_REPO=$(cat "$HOME/.aris/repo" 2>/dev/null) || true
+fi
 TRACE_HELPER=".aris/tools/save_trace.sh"
 [ -f "$TRACE_HELPER" ] || TRACE_HELPER="tools/save_trace.sh"
 [ -f "$TRACE_HELPER" ] || { [ -n "${ARIS_REPO:-}" ] && TRACE_HELPER="$ARIS_REPO/tools/save_trace.sh"; }
@@ -51,7 +54,10 @@ if [ -n "$TRACE_HELPER" ]; then
   bash "$TRACE_HELPER" \
     --skill "<skill-name>" \
     --purpose "<purpose>" \
-    --model "<model>" \
+    --model "<model that actually ran — the RESOLVED pair, not the target>" \
+    --effort "<effort that actually ran>" \
+    --fallback-reason "<why the capability chain stepped down; empty when it didn't>" \
+    --status "<ok | fallback_used | error>" \
     --thread-id "<threadId from response>" \
     --prompt "<full prompt as sent>" \
     --response "<full response content>"
@@ -98,7 +104,7 @@ when the helper is unreachable — the trace is forensic evidence, so
   "purpose": "round-1-review",
   "timestamp": "2026-04-15T14:31:00+08:00",
   "tool": "mcp__codex__codex",
-  "model": "gpt-5.5",
+  "model": "gpt-5.6-sol",
   "config": {"model_reasoning_effort": "xhigh"},
   "files_referenced": ["paper/sections/3_method.tex", "results/table1.csv"],
   "prompt": "<full prompt text>"
@@ -115,7 +121,7 @@ The reviewer's full response, verbatim. No truncation, no summarization.
   "purpose": "round-1-review",
   "timestamp": "2026-04-15T14:33:00+08:00",
   "thread_id": "019d8fe0-b25d-...",
-  "model": "gpt-5.5",
+  "model": "gpt-5.6-sol",
   "duration_ms": 142000,
   "status": "ok"
 }
@@ -137,6 +143,46 @@ After writing a trace, append a compact summary event to `.aris/meta/events.json
 ```
 
 This allows `/meta-optimize` to discover traces without reading the full trace files.
+
+## Debugging With Traces
+
+Traces are not only audit evidence — they are the **first place to look when a
+verdict is surprising**: a score regresses round-to-round, two reviewer backends
+disagree, or `/result-to-claim` contradicts an earlier claim. Before re-invoking
+the reviewer for "a better answer", read the raw transcript and find the moment
+its judgment actually changed:
+
+```bash
+# Diff the raw response bodies across the two calls in question
+skill=auto-review-loop run=2026-04-15_run01
+diff ".aris/traces/$skill/$run/002-round-2.response.md" \
+     ".aris/traces/$skill/$run/003-round-3.response.md"
+
+# Grep for the sentence where the assessment turned
+grep -En 'however|but|concern|missing|cannot' \
+     ".aris/traces/$skill/$run/003-round-3.response.md"
+```
+
+The paragraph where the assessment changed **is** the causal explanation for the
+divergence — cite it, don't guess. Re-running the reviewer without reading the
+trace is tuning by vibe: you get a new opinion, not an explanation.
+
+This is the same muscle ARIS already applies to code failures (the "**Read the
+error** — parse traceback, stderr, and log files" step in `/experiment-bridge`'s
+auto-debug sequence, and `/codex:rescue` reading tracebacks before a retry) —
+applied to saved AI-judgment transcripts instead of stderr. The trace is written
+in English and most of it is the reviewer talking to itself; the discipline is
+identical: read the primary artifact first, then act on the exact divergence
+point rather than re-rolling the dice.
+
+Practical triggers:
+
+| Surprise | Trace move |
+|---|---|
+| Score dropped after a "fix" round | diff the two rounds' `.response.md`; find which criterion flipped |
+| Two backends disagree (codex vs gemini/manual) | grep both responses for the SAME artifact path; compare what each actually read |
+| Reviewer "forgot" an earlier concern | grep prior rounds for the concern keyword; if present-then-absent, cite it in the next prompt instead of restating from memory |
+| Verdict contradicts a deterministic checker | read the request `.md` — was the checker's output actually in the files the reviewer was pointed at? |
 
 ## Privacy
 

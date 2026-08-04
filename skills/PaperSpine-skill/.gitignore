@@ -42,3 +42,6 @@ Thumbs.db
 *.pdf
 !tests/fixtures/*.pdf
 paper-spine-promo-video/
+
+# Reproducible acceptance sample (regenerate via examples/v4_acceptance.py)
+examples/v4_sample_run/

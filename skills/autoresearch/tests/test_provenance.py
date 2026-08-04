@@ -17,6 +17,7 @@ def test_model_family_mapping():
     assert pv.model_family("claude-opus-4-8") == "anthropic"
     assert pv.model_family("Sonnet") == "anthropic"
     assert pv.model_family("gpt-5.5") == "openai"
+    assert pv.model_family("gpt-5.6-sol") == "openai"     # current default reviewer (2026-07)
     assert pv.model_family("codex") == "openai"
     # CRITICAL: oracle-pro routes to GPT-Pro → it is the OPENAI family, not its own.
     assert pv.model_family("oracle-pro") == "openai"
@@ -121,6 +122,8 @@ def test_stamp_and_read_roundtrip():
                        reviewer_model="gpt-5.5", verdict_id="codex_thread_abc",
                        ts="2026-05-29T00:00:00Z")
         assert rec["created_by"] == "aris-auto"
+        assert rec["review_independence"] == "cross-family"
+        assert rec["acceptance_status"] == "accepted"
         assert rec["author_family"] == "anthropic"
         assert rec["reviewer_family"] == "openai"
         assert rec["content_hash"] == pv.content_hash(str(f))
@@ -129,6 +132,43 @@ def test_stamp_and_read_roundtrip():
         # tamper-evidence: edit the file → hash no longer matches the stamped record
         f.write_text("tampered\n", encoding="utf-8")
         assert pv.content_hash(str(f)) != back["content_hash"]
+
+
+def test_stamp_provisional_records_same_family_without_auto_curation_authority():
+    with tempfile.TemporaryDirectory() as d:
+        f = Path(d) / "node.md"
+        f.write_text("same-family reviewed content\n", encoding="utf-8")
+
+        rec = pv.stamp_provisional(
+            str(f),
+            author_model="codex-gpt-5.5",
+            reviewer_model="gpt-5.5",
+            verdict_id="agent_019f",
+            ts="2026-07-10T00:00:00Z",
+        )
+
+        assert rec["author_family"] == "openai"
+        assert rec["reviewer_family"] == "openai"
+        assert rec["review_independence"] == "same-family"
+        assert rec["acceptance_status"] == "provisional"
+        assert pv.is_auto_authored(str(f)) is True
+        assert pv.is_auto_curatable(str(f)) is False
+
+
+def test_stamp_provisional_refuses_cross_family_and_unknown_models():
+    with tempfile.TemporaryDirectory() as d:
+        f = Path(d) / "node.md"
+        f.write_text("content\n", encoding="utf-8")
+        for author, reviewer in [
+            ("codex-gpt-5.5", "gemini-3.1-pro"),
+            ("unknown-executor", "gpt-5.5"),
+        ]:
+            try:
+                pv.stamp_provisional(str(f), author, reviewer, verdict_id="agent_1")
+                raise AssertionError(f"should reject provisional route {author}/{reviewer}")
+            except ValueError:
+                pass
+        assert pv.read(str(f)) is None
 
 
 def test_stamp_dir_hashes_skill_md():
@@ -148,11 +188,13 @@ def test_is_auto_authored():
         auto.write_text("x\n", encoding="utf-8")
         pv.stamp(str(auto), "claude-opus-4-8", "gpt-5.5", verdict_id="t1")
         assert pv.is_auto_authored(str(auto)) is True
+        assert pv.is_auto_curatable(str(auto)) is True
 
         # a hand-written / canonical artifact has NO provenance → off-limits to curation
         canonical = Path(d) / "canonical.md"
         canonical.write_text("hand-written\n", encoding="utf-8")
         assert pv.is_auto_authored(str(canonical)) is False
+        assert pv.is_auto_curatable(str(canonical)) is False
 
         # a record with created_by != aris-auto is also not auto-curatable
         human = Path(d) / "human.md"
@@ -160,6 +202,74 @@ def test_is_auto_authored():
         pv.stamp(str(human), "claude-opus-4-8", "gpt-5.5", verdict_id="t2",
                  created_by="human")
         assert pv.is_auto_authored(str(human)) is False
+        assert pv.is_auto_curatable(str(human)) is False
+
+
+
+
+# ---- sidecar hardening: a sidecar is untrusted JSON on disk ----
+
+def test_spoofed_sidecar_status_cannot_authorize_curation():
+    import json as _json
+    with tempfile.TemporaryDirectory() as d:
+        art = Path(d) / "skill.md"
+        art.write_text("x\n", encoding="utf-8")
+        pv.stamp_provisional(str(art), "codex-gpt-5.6-sol", "gpt-5.6-sol", verdict_id="agent:1")
+        sc = Path(str(art) + ".provenance.json")
+        rec = _json.loads(sc.read_text())
+        # attack 1: flip the status field to accepted
+        rec["acceptance_status"] = "accepted"
+        sc.write_text(_json.dumps(rec))
+        assert pv.is_auto_curatable(str(art)) is False   # families re-verified
+        # attack 2: delete the field to masquerade as a legacy record
+        del rec["acceptance_status"]
+        sc.write_text(_json.dumps(rec))
+        assert pv.is_auto_curatable(str(art)) is False   # legacy re-verifies families too
+        # attack 3: also spoof the family labels (recomputation must win)
+        rec["reviewer_family"] = "anthropic"
+        rec["review_independence"] = "cross-family"
+        sc.write_text(_json.dumps(rec))
+        assert pv.is_auto_curatable(str(art)) is False
+
+
+def test_stale_stamp_after_edit_is_not_curatable():
+    with tempfile.TemporaryDirectory() as d:
+        art = Path(d) / "skill.md"
+        art.write_text("x\n", encoding="utf-8")
+        pv.stamp(str(art), "claude-opus-4-8", "gpt-5.6-sol", verdict_id="t1")
+        assert pv.is_auto_curatable(str(art)) is True
+        art.write_text("x edited after acceptance\n", encoding="utf-8")
+        assert pv.is_auto_curatable(str(art)) is False   # hash no longer matches
+
+
+def test_provisional_cannot_overwrite_accepted():
+    with tempfile.TemporaryDirectory() as d:
+        art = Path(d) / "skill.md"
+        art.write_text("x\n", encoding="utf-8")
+        pv.stamp(str(art), "claude-opus-4-8", "gpt-5.6-sol", verdict_id="t1")
+        try:
+            pv.stamp_provisional(str(art), "codex-gpt-5.6-sol", "gpt-5.6-sol", verdict_id="agent:2")
+            assert False, "provisional must not silently replace accepted"
+        except ValueError:
+            pass
+        assert pv.is_auto_curatable(str(art)) is True    # acceptance survived
+
+
+def test_legitimate_deterministic_stamp_still_curatable():
+    # regression guard: hardening must not reject a REAL deterministic verifier
+    with tempfile.TemporaryDirectory() as d:
+        art = Path(d) / "skill.md"
+        art.write_text("x\n", encoding="utf-8")
+        pv.stamp(str(art), "claude-opus-4-8", "deterministic:pytest", verdict_id="report:tests")
+        assert pv.is_auto_curatable(str(art)) is True
+        # but a deterministic LABEL on a model reviewer is rejected
+        import json as _json
+        sc = Path(str(art) + ".provenance.json")
+        rec = _json.loads(sc.read_text())
+        rec["reviewer_model"] = "gpt-5.6-sol"
+        rec["review_independence"] = "deterministic"
+        sc.write_text(_json.dumps(rec))
+        assert pv.is_auto_curatable(str(art)) is False
 
 
 if __name__ == "__main__":

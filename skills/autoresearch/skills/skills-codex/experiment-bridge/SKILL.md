@@ -72,6 +72,11 @@ Present a brief summary:
 Proceeding to implementation.
 ```
 
+**Research-contract fallback**: if `idea-stage/docs/research_contract.md` does
+not exist yet, create it now from `templates/RESEARCH_CONTRACT_TEMPLATE.md`
+using the selected idea + claims from the experiment plan — downstream
+`/result-to-claim` and `/ablation-planner` read it as the claims source.
+
 ### Phase 2: Implement Experiment Code
 
 **If `BASE_REPO` is set** — clone the repo first:
@@ -102,7 +107,7 @@ For each milestone (in order), write the experiment scripts:
    - Does the code match FINAL_PROPOSAL.md's method description?
    - **CRITICAL**: does evaluation compare predictions against dataset ground truth, never another model's output?
 
-### Phase 2.5: Cross-Model Code Review (when CODE_REVIEW = true)
+### Phase 2.5: Fresh-Agent Code Review (same-family provisional; when CODE_REVIEW = true)
 
 Skip this step if `CODE_REVIEW` is `false`.
 
@@ -110,6 +115,7 @@ Before deploying, send the experiment code to a secondary Codex reviewer with xh
 
 ```text
 spawn_agent:
+  model: gpt-5.6-sol
   reasoning_effort: xhigh
   message: |
     Review the following experiment implementation for correctness.
@@ -152,7 +158,17 @@ Wait for completion. Verify:
 - GPU memory usage is within bounds
 - Output format matches expectations
 
-If sanity fails → fix the code, re-run. Do not proceed to full deployment with broken code.
+If sanity fails → READ the traceback/stderr/logs first, then fix the code and
+re-run — never re-run unchanged hoping for a different outcome. (The same
+read-the-primary-artifact discipline applies to surprising REVIEWER verdicts:
+see `shared-references/review-tracing.md` § *Debugging With Traces*.) After 1–2
+failed patches on the same failure, **discard and reimplement the failing
+script cleanly from the plan** — a peer move to another patch, not a last
+resort; delete only the attempt's own code, never the plan / tracker / data /
+results (per [`external-cadence.md`](../shared-references/external-cadence.md), "Let a broken attempt restart, not
+just patch"). Two clean reimplements failing the same way put the plan or the
+environment in question — report that explicitly. Do not proceed to full
+deployment with broken code.
 
 If the same sanity failure repeats, trigger a second opinion: summarize the plan, code diff, command, logs, backend, and failure, then ask a fresh Codex reviewer agent for a rescue diagnosis. Apply only concrete fixes grounded in the logs.
 

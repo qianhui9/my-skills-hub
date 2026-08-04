@@ -1,7 +1,7 @@
 ---
 name: experiment-audit
 description: "Audit experiment integrity before claiming results. Uses cross-model review (external reviewer backend) to check for fake ground truth, score normalization fraud, phantom results, and insufficient scope. Use when user says \"审计实验\", \"check experiment integrity\", \"audit results\", \"实验诚实度\", or after experiments complete before writing claims."
-argument-hint: [experiment-dir-or-results-path]
+argument-hint: "[experiment-dir-or-results-path]"
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, mcp__codex__codex, mcp__codex__codex-reply, mcp__manual_review__review, mcp__manual_review__review_reply
 ---
 
@@ -34,7 +34,7 @@ This follows `shared-references/reviewer-independence.md` and `shared-references
 
 ## Constants
 
-- **REVIEWER_BACKEND = `codex`** — Default: Codex MCP (xhigh). Override with `— reviewer: oracle-pro` for Oracle MCP, or `— reviewer: manual` for Manual Review MCP. If manual-review MCP is unavailable, stop and print the install command; do not fall back to Codex. See `shared-references/reviewer-routing.md`.
+- **REVIEWER_BACKEND = `codex`** — Default: Codex MCP (ultra). Override with `— reviewer: oracle-pro` for Oracle MCP, or `— reviewer: manual` for Manual Review MCP. If manual-review MCP is unavailable, stop and print the install command; do not fall back to Codex. See `shared-references/reviewer-routing.md`.
 
 ## Reviewer Calling Convention
 
@@ -80,8 +80,8 @@ Scan project directory for:
 Based on the selected reviewer backend (see Reviewer Calling Convention), pass ONLY file paths and the audit checklist to the reviewer. The reviewer reads everything directly.
 
 For `codex`, call `mcp__codex__codex` with:
-- `model: gpt-5.5`
-- `config: {"model_reasoning_effort": "xhigh"}`
+- `model: gpt-5.6-sol`
+- `config: {"model_reasoning_effort": "ultra"}`
 - `sandbox: read-only`
 - `cwd: [project directory]`
 - `prompt: [the exact full prompt below]`
@@ -95,8 +95,11 @@ Manual review cannot use Codex-only `model`, `sandbox`, or `cwd`; include the sa
 Use this exact prompt for both backends:
 
 ```
-You are an experiment integrity auditor. Read ALL files listed below
-    and check for the following fraud patterns.
+You are an experiment integrity auditor. Start from the assumption that the
+    evaluation is compromised somewhere — your job is to find where. Be
+    adversarial. Trust nothing the author tells you — verify everything
+    yourself. Read ALL files listed below and check for the following fraud
+    patterns.
 
     Files to read:
     - Evaluation scripts: [list paths]
@@ -171,7 +174,7 @@ Parse the reviewer's response and write `EXPERIMENT_AUDIT.md`:
 # Experiment Audit Report
 
 **Date**: [today]
-**Auditor**: External reviewer backend, xhigh reasoning (cross-model, read-only)
+**Auditor**: External reviewer backend, ultra reasoning (cross-model, read-only)
 **Project**: [project name]
 
 ## Overall Verdict: [PASS | WARN | FAIL]
@@ -211,7 +214,7 @@ Also write `EXPERIMENT_AUDIT.json` for machine consumption:
 ```json
 {
   "date": "2026-04-10",
-  "auditor": "external-reviewer-xhigh",
+  "auditor": "external-reviewer-ultra",
   "overall_verdict": "warn",
   "integrity_status": "warn",
   "checks": {

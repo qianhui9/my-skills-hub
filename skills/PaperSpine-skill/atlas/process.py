@@ -478,6 +478,8 @@ def locate(loc):
 
 def main():
     users = json.load(open(os.path.join(HERE, "stargazers_raw.json"), encoding="utf-8"))
+    if not users:
+        raise RuntimeError("stargazers_raw.json is empty; refusing to generate an empty atlas")
     city_agg = {}
     org_agg = {}
     located = 0

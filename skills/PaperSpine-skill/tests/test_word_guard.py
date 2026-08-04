@@ -255,6 +255,94 @@ class WordGuardTests(unittest.TestCase):
             result = run_guard(docx, min_chars=50)
             self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
 
+    def test_author_year_citation_without_tex_fails(self) -> None:
+        # Regression: a docx rendered author-year with no source .tex used to pass
+        # silently. The skill's default rule is plain numeric [1].
+        with tempfile.TemporaryDirectory() as tmp:
+            docx = Path(tmp) / "paper.docx"
+            make_docx(docx, [
+                "We build on prior work (Smith et al., 2020) to improve the baseline accuracy. " * 6,
+            ])
+            result = run_guard(docx, min_chars=50)
+            self.assertEqual(result.returncode, 1, result.stderr + result.stdout)
+            self.assertIn("Author-year citation", result.stdout)
+
+    def test_docx_starting_with_abstract_without_title_fails(self) -> None:
+        # Regression: word_guard used to skip past a leading 'Abstract' wrapper and
+        # accept the abstract body as the title. The Word output must OPEN with the title.
+        with tempfile.TemporaryDirectory() as tmp:
+            docx = Path(tmp) / "paper.docx"
+            make_docx(docx, [
+                "Abstract",
+                "This work studies trajectory alignment for efficient diffusion model distillation. " * 6,
+                "Introduction",
+                "Diffusion models are expensive to deploy in production settings at scale. " * 6,
+            ])
+            result = run_guard(docx, min_chars=50)
+            self.assertEqual(result.returncode, 1, result.stderr + result.stdout)
+            self.assertIn("section/wrapper heading", result.stdout)
+
+    def test_fix_fonts_temp_is_beside_docx_not_cross_drive(self) -> None:
+        # Regression: fix_docx_fonts must create its temp in the docx's OWN dir.
+        # A system-temp temp + os.replace fails across drives on Windows
+        # (WinError 17) when the project is on a different drive than %TEMP%.
+        src = (ROOT / "src" / "scripts" / "word_guard.py").read_text(encoding="utf-8")
+        self.assertIn("dir=str(docx_path.parent)", src)
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp) / "sub"
+            d.mkdir()
+            docx = d / "paper.docx"
+            make_docx(docx, ["Title paragraph with enough text to check. " * 20])
+            res = subprocess.run(
+                [sys.executable, "src/scripts/word_guard.py", str(docx), "--fix-fonts", "--language", "en"],
+                cwd=ROOT, text=True, capture_output=True, check=False,
+            )
+            self.assertNotIn("WinError 17", res.stdout + res.stderr)
+            self.assertNotIn("Traceback", res.stdout + res.stderr)
+            self.assertEqual([p.name for p in d.glob("tmp*.docx")], [])
+
+    def test_extract_title_from_tex_drops_linebreaks(self) -> None:
+        # Regression: \title{A \\ B} kept the literal '\\' in the extracted title,
+        # which then never matched the docx where '\\' renders as a line break.
+        sys.path.insert(0, str(ROOT / "src" / "scripts"))
+        from word_guard import extract_title_from_tex  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tex = Path(tmp) / "main.tex"
+            tex.write_text(
+                "\\title{Alpha Beta Gamma \\\\[2mm] Delta Epsilon Study}\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                extract_title_from_tex(tex), "Alpha Beta Gamma Delta Epsilon Study"
+            )
+
+    def test_title_with_latex_linebreak_matches_split_paragraphs(self) -> None:
+        # Regression: a \title{...} with a '\\' line break renders as TWO docx
+        # paragraphs; the title check used to FAIL because the extracted expected
+        # title still carried the literal '\\'. End-to-end via --tex.
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            docx = d / "paper.docx"
+            make_docx(docx, [
+                "Parameter-Efficient Fine-Tuning",
+                "for Multilingual Sequence Labeling Tasks",
+                "Abstract",
+                "This work studies parameter-efficient adaptation across languages. " * 6,
+            ])
+            tex = d / "main.tex"
+            tex.write_text(
+                "\\title{Parameter-Efficient Fine-Tuning \\\\ for Multilingual Sequence Labeling Tasks}\n",
+                encoding="utf-8",
+            )
+            result = subprocess.run(
+                [sys.executable, "src/scripts/word_guard.py", str(docx),
+                 "--tex", str(tex), "--language", "en", "--markdown", "--min-chars", "50"],
+                cwd=ROOT, text=True, capture_output=True, check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            self.assertNotIn("not found in first 5 paragraphs", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()
