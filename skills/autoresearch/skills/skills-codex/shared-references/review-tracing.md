@@ -54,6 +54,10 @@ the resolver returns the empty string, write the four files inline
   "run_id": "2026-04-15_run01",
   "started_at": "2026-04-15T14:30:00+08:00",
   "executor": "codex",
+  "executor_model": "gpt-5.6-sol",
+  "executor_family": "openai",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
   "project_dir": "/path/to/project"
 }
 ```
@@ -66,7 +70,7 @@ the resolver returns the empty string, write the four files inline
   "purpose": "round-1-review",
   "timestamp": "2026-04-15T14:31:00+08:00",
   "tool": "spawn_agent",
-  "model": "gpt-5.5",
+  "model": "gpt-5.6-sol",
   "reasoning_effort": "xhigh",
   "files_referenced": ["paper/sections/3_method.tex", "results/table1.csv"],
   "prompt": "<full prompt text>"
@@ -83,11 +87,19 @@ the resolver returns the empty string, write the four files inline
   "purpose": "round-1-review",
   "timestamp": "2026-04-15T14:33:00+08:00",
   "agent_id": "019d8fe0-b25d-...",
-  "model": "gpt-5.5",
+  "model": "gpt-5.6-sol",
+  "reviewer_family": "openai",
+  "review_independence": "same-family",
+  "acceptance_status": "provisional",
   "duration_ms": 142000,
   "status": "ok"
 }
 ```
+
+For a Claude/Gemini overlay write `review_independence: cross-family` and
+`acceptance_status: accepted`. For a deterministic verifier write
+`review_independence: deterministic` and `acceptance_status: accepted`. These
+fields describe the reviewer route; they do not rewrite the substantive verdict.
 
 ## Configuration
 
@@ -104,6 +116,28 @@ After writing a trace, append a compact event to `.aris/meta/events.jsonl`:
 ```json
 {"event":"review_trace","skill":"auto-review-loop","purpose":"round-1-review","agent_id":"...","trace_path":".aris/traces/auto-review-loop/2026-04-15_run01/","status":"ok"}
 ```
+
+## Debugging With Traces
+
+Traces are not only audit evidence — they are the **first place to look when a
+verdict is surprising**: a score regresses round-to-round, two reviewer agents
+disagree, or a claim check contradicts an earlier round. Before re-invoking the
+reviewer for "a better answer", read the raw transcript and find the moment its
+judgment actually changed:
+
+```bash
+skill=auto-review-loop run=2026-04-15_run01
+diff ".aris/traces/$skill/$run/002-round-2.response.md" \
+     ".aris/traces/$skill/$run/003-round-3.response.md"
+grep -En 'however|but|concern|missing|cannot' \
+     ".aris/traces/$skill/$run/003-round-3.response.md"
+```
+
+The paragraph where the assessment changed **is** the causal explanation for the
+divergence — cite it, don't guess. Re-running the reviewer without reading the
+trace is tuning by vibe: you get a new opinion, not an explanation. Same muscle
+as reading a stack trace before retrying a failed run — the trace is just
+written in English, and most of it is the reviewer talking to itself.
 
 ## Privacy
 

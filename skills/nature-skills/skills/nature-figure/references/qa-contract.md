@@ -1,5 +1,15 @@
 # QA Contract
 
+## Contents
+
+- [Current official references to verify](#current-official-references-to-verify)
+- [Pre-submission checklist](#pre-submission-checklist)
+- [Statistics legend minimum](#statistics-legend-minimum)
+- [Image-integrity minimum](#image-integrity-minimum)
+- [Automated source preflight](#automated-source-preflight)
+- [Export checks](#export-checks)
+
+
 Use this before final delivery, before a revision package, and whenever the figure
 contains microscopy, blots, gels, clinical subgroup analysis, or statistical claims.
 Journal rules change, so verify the latest target journal author guide for final
@@ -81,6 +91,26 @@ quantification link:
 Global adjustments are generally safer than local selective edits. If an adjustment
 changes the visibility of relevant background or bands, flag it instead of silently
 normalizing it away.
+
+## Automated source preflight
+
+Run the dependency-free validator on the final plotting source before rendering the delivery bundle:
+
+```bash
+# Python source
+python skills/nature-figure/scripts/validate_figure.py path/to/figure.py
+
+# R, R Markdown, or Quarto source
+python skills/nature-figure/scripts/validate_figure.py path/to/figure.R
+
+# Machine-readable report or stricter warning gate
+python skills/nature-figure/scripts/validate_figure.py path/to/figure.py --json
+python skills/nature-figure/scripts/validate_figure.py path/to/figure.py --strict
+```
+
+The preflight checks source syntax, font configuration and size floor, unsafe color maps, editable-text settings, vector/raster exports, DPI, common journal widths, potential sampling or unreported missing-data exclusion, simulated-data leakage, log guards, and obvious cross-backend plotting references.
+
+Treat the result as a deterministic source audit, not as evidence that the analysis or rendered figure is correct. Resolve all `FAIL` findings before delivery. Review every `WARN`, then run the selected backend and inspect the actual SVG/PDF/TIFF/PNG outputs at final size. A warning may be acceptable only when the QA notes state the reason.
 
 ## Export checks
 

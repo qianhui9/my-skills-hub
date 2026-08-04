@@ -1,8 +1,8 @@
 {
   "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
   "name": "paper-spine",
-  "version": "3.3.0",
-  "description": "Motivation-driven paper and report writing skill suite for Claude Code.",
+  "version": "4.0.0",
+  "description": "Contribution-first, reviewer-aware academic paper and report writing system for Claude Code.",
   "author": {
     "name": "WUBING2023",
     "url": "https://github.com/WUBING2023"

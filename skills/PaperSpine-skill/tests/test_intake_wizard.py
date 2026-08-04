@@ -80,7 +80,10 @@ class IntakeWizardTests(unittest.TestCase):
             self.assertEqual(data["reference_paths"], ["local_refs"])
             self.assertEqual(data["citation_target_count"], 24)
             self.assertEqual(data["special_requirements"], ["Keep figures"])
-            self.assertEqual(data["word_output"], "none")
+            # V4: --word-output defaults to "docx" (Word deliverable on by default);
+            # only an explicit choice of "none" (interactive option 1 or --word-output none)
+            # disables it.
+            self.assertEqual(data["word_output"], "docx")
             self.assertEqual(data["translation_package"], "none")
 
     def test_flash_journal_english_rewrite(self) -> None:

@@ -8,8 +8,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-SUITE_SKILLS = [
-    "paper-spine",
+SKILL_NAME = "paper-spine"
+HERMES_CATEGORY = "academic-writing"
+
+LEGACY_SKILLS = (
     "paper-spine-ui",
     "paper-spine-intake",
     "paper-spine-research",
@@ -21,25 +23,16 @@ SUITE_SKILLS = [
     "paper-spine-translate",
     "paper-spine-humanize",
     "paper-spine-update",
-]
+)
 
-WORKER_SKILLS = [
-    "paper-spine-ui",
-    "paper-spine-intake",
-    "paper-spine-research",
-    "paper-spine-citation",
-    "paper-spine-rewrite",
-    "paper-spine-build",
-    "paper-spine-latex",
-    "paper-spine-audit",
-    "paper-spine-translate",
-    "paper-spine-humanize",
-]
+# The absolute installed launcher path that intake docs MUST reference (single skill).
+ABS_PS1_LAUNCHER = r"$env:USERPROFILE\.codex\skills\paper-spine\scripts\launch_paperspine_ui.ps1"
 
 
 def all_skill_docs() -> list[Path]:
     docs = list((ROOT / "dist").rglob("SKILL.md"))
     docs += list((ROOT / "dist").rglob("interactive-intake.md"))
+    docs += list((ROOT / "dist").rglob("paperspine.md"))
     return docs
 
 
@@ -51,7 +44,7 @@ def frontmatter_value(skill_md: Path, field: str) -> str:
 
 
 class CodexSingleEntryTests(unittest.TestCase):
-    """Guarantee #1: Codex sees exactly one 'paper-spine', plus the full suite."""
+    """Guarantee #1: Codex sees exactly ONE 'paper-spine' skill (single-skill V4)."""
 
     def test_codex_install_exposes_single_paper_spine(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -61,37 +54,54 @@ class CodexSingleEntryTests(unittest.TestCase):
                     sys.executable, "src/scripts/sync_local_installs.py", "--clean-legacy",
                     "--desktop-root", str(base / "desktop"),
                     "--codex-skills-dir", str(base / "codex" / "skills"),
+                    "--codex-prompts-dir", str(base / "codex" / "prompts"),
                     "--claude-skills-dir", str(base / "claude" / "skills"),
                     "--claude-commands-dir", str(base / "claude" / "commands"),
                     "--openclaw-skills-dir", str(base / "openclaw" / "skills"),
-                    "--codex-prompts-dir", str(base / "codex" / "prompts"),
+                    "--hermes-skills-dir", str(base / "hermes" / "skills"),
                     "--config-home", str(base / "config"),
                 ],
                 cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
             )
             self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
-            # The /paperspine slash command must install for Codex too.
-            self.assertTrue((base / "codex" / "prompts" / "paperspine.md").exists())
+
+            # dist/codex/skills must contain exactly one 'paper-spine' folder, nothing else.
+            dist_codex = ROOT / "dist" / "codex" / "skills"
+            dist_skill_dirs = sorted(p.name for p in dist_codex.iterdir() if p.is_dir())
+            self.assertEqual(dist_skill_dirs, [SKILL_NAME], f"dist codex skills: {dist_skill_dirs}")
+
+            # The installed Codex skills dir also has exactly one paper-spine.
             codex = base / "codex" / "skills"
-
-            ps_dirs = [p for p in codex.iterdir() if p.is_dir() and p.name == "paper-spine"]
+            ps_dirs = [p for p in codex.iterdir() if p.is_dir() and p.name == SKILL_NAME]
             self.assertEqual(len(ps_dirs), 1, "expected exactly one paper-spine directory")
+            installed = [p.name for p in codex.iterdir() if p.is_dir()]
+            self.assertEqual(installed, [SKILL_NAME], f"Codex must install ONLY paper-spine: {installed}")
+            self.assertTrue((codex / SKILL_NAME / "SKILL.md").exists())
+            self.assertEqual(
+                frontmatter_value(codex / SKILL_NAME / "SKILL.md", "name"), SKILL_NAME
+            )
 
-            names = [
-                frontmatter_value(d / "SKILL.md", "name")
-                for d in codex.iterdir() if (d / "SKILL.md").exists()
-            ]
-            self.assertEqual(names.count("paper-spine"), 1, f"duplicate paper-spine name: {names}")
-            self.assertEqual(len(names), len(set(names)), f"non-unique skill names: {names}")
+            # The /paperspine slash command must install as a Codex prompt.
+            self.assertTrue((base / "codex" / "prompts" / "paperspine.md").exists())
 
-            for skill in SUITE_SKILLS:
-                self.assertTrue((codex / skill / "SKILL.md").exists(), f"missing {skill}")
-            for legacy in ("PaperSpine", "PaperSpineV2"):
+            # No legacy worker dirs or old monolith dirs may remain.
+            for legacy in LEGACY_SKILLS + ("PaperSpine", "PaperSpineV2"):
                 self.assertFalse((codex / legacy).exists(), f"legacy {legacy} should not install")
+
+    def test_paper_spine_ships_in_every_host(self) -> None:
+        for host in ("claude", "codex", "openclaw"):
+            self.assertTrue(
+                (ROOT / "dist" / host / "skills" / SKILL_NAME / "SKILL.md").exists(),
+                f"{host}:{SKILL_NAME} must ship",
+            )
+        self.assertTrue(
+            (ROOT / "dist" / "hermes" / "skills" / HERMES_CATEGORY / SKILL_NAME / "SKILL.md").exists(),
+            "hermes academic-writing/paper-spine must ship",
+        )
 
 
 class UiAutoLaunchTests(unittest.TestCase):
-    """Guarantee #1b: the UI launches by ABSOLUTE installed path, automatically."""
+    """Guarantee #1b: the UI launches by ABSOLUTE single-skill install path, automatically."""
 
     def test_no_relative_launcher_invocation_in_docs(self) -> None:
         bad: list[str] = []
@@ -101,10 +111,29 @@ class UiAutoLaunchTests(unittest.TestCase):
                 bad.append(str(doc.relative_to(ROOT)))
         self.assertEqual(bad, [], "docs must invoke the launcher by absolute install path")
 
-    def test_launcher_referenced_by_absolute_install_path(self) -> None:
-        ui = (ROOT / "dist" / "claude" / "skills" / "paper-spine-ui" / "SKILL.md").read_text(encoding="utf-8")
-        self.assertIn(r"$env:USERPROFILE\.codex\skills\paper-spine-ui\scripts\launch_paperspine_ui.ps1", ui)
-        self.assertIn(r"$env:USERPROFILE\.claude\skills\paper-spine-ui\scripts\launch_paperspine_ui.ps1", ui)
+    def test_no_legacy_worker_launcher_paths_in_docs(self) -> None:
+        """Single-skill: launcher lives under paper-spine/, never paper-spine-ui/ or -intake/."""
+        bad: list[str] = []
+        for doc in all_skill_docs():
+            text = doc.read_text(encoding="utf-8")
+            if "paper-spine-ui" in text or "paper-spine-intake" in text:
+                bad.append(str(doc.relative_to(ROOT)))
+        self.assertEqual(bad, [], "no doc may point at the retired worker skill folders")
+
+    def test_codex_prompt_references_absolute_single_skill_launcher(self) -> None:
+        prompt = ROOT / "src" / "adapters" / "codex" / "prompts" / "paperspine.md"
+        text = prompt.read_text(encoding="utf-8")
+        self.assertIn(ABS_PS1_LAUNCHER, text)
+        self.assertNotIn("paper-spine-ui", text)
+        self.assertNotIn("-File scripts/launch_paperspine_ui.ps1", text)
+
+    def test_intake_reference_uses_absolute_single_skill_launcher(self) -> None:
+        intake = ROOT / "src" / "skill" / "references" / "interactive-intake.md"
+        text = intake.read_text(encoding="utf-8")
+        self.assertIn(ABS_PS1_LAUNCHER, text)
+        self.assertNotIn("paper-spine-ui", text)
+        self.assertNotIn("paper-spine-intake", text)
+        self.assertNotIn("-File scripts/launch_paperspine_ui.ps1", text)
 
     def test_codex_paperspine_slash_command_exists_and_routes_to_orchestrator(self) -> None:
         prompt = ROOT / "dist" / "codex" / "prompts" / "paperspine.md"
@@ -119,7 +148,9 @@ class UiAutoLaunchTests(unittest.TestCase):
         self.assertIn("FIRST tool action", text)
 
     def test_orchestrator_auto_launches_ui_when_config_missing(self) -> None:
-        orch = (ROOT / "dist" / "claude" / "skills" / "paper-spine" / "SKILL.md").read_text(encoding="utf-8").lower()
+        orch = (ROOT / "dist" / "claude" / "skills" / SKILL_NAME / "SKILL.md").read_text(
+            encoding="utf-8"
+        ).lower()
         for token in ("configuration is missing", "launch", "intake", "automatically"):
             self.assertIn(token, orch, f"orchestrator must describe auto-launch ({token})")
         # Codex hard constraint: launch UI as the first action, with escalation.
@@ -159,55 +190,61 @@ class CrossPlatformLauncherTests(unittest.TestCase):
 
 
 class OrchestratorDiscoverabilityTests(unittest.TestCase):
-    """The main skill must be intent-discoverable in Codex (no anti-trigger desc)."""
+    """The single skill must be intent-discoverable (no anti-trigger description)."""
 
     def test_orchestrator_description_is_trigger_rich(self) -> None:
         desc = frontmatter_value(
-            ROOT / "dist" / "claude" / "skills" / "paper-spine" / "SKILL.md", "description"
+            ROOT / "dist" / "claude" / "skills" / SKILL_NAME / "SKILL.md", "description"
         )
         low = desc.lower()
-        # Must read like a task trigger, not an internal note that hides it.
         self.assertNotIn("internal orchestrator", low)
         self.assertNotIn("users should use /paperspine", low)
         self.assertTrue(
             any(verb in low for verb in ("write", "rewrite", "build")),
-            "orchestrator description needs an action verb so Codex surfaces it",
+            "orchestrator description needs an action verb so hosts surface it",
         )
         self.assertIn("paper", low)
         self.assertLessEqual(len(desc), 200)
 
     def test_orchestrator_not_marked_internal_step(self) -> None:
-        # The entry point must NOT carry the worker "(internal ... step)" marker.
         desc = frontmatter_value(
-            ROOT / "dist" / "claude" / "skills" / "paper-spine" / "SKILL.md", "description"
+            ROOT / "dist" / "claude" / "skills" / SKILL_NAME / "SKILL.md", "description"
         )
         self.assertNotIn("internal /paperspine step", desc.lower())
 
 
-class WorkerVisibilityTests(unittest.TestCase):
-    """Guarantee #3: worker skills stay VISIBLE (never auto-hidden)."""
+class HermesFrontmatterTests(unittest.TestCase):
+    """Single-skill V4: Hermes ships paper-spine under the academic-writing category."""
 
-    def test_no_skills_are_marked_internal_for_hiding(self) -> None:
-        sys.path.insert(0, str(ROOT / "src" / "scripts"))
-        import sync_local_installs  # noqa: PLC0415
-
-        self.assertEqual(
-            sync_local_installs.PAPERSPINE_INTERNAL_SKILLS, set(),
-            "no PaperSpine skill may be flagged for hiding",
+    def test_hermes_skill_has_academic_writing_frontmatter(self) -> None:
+        skill_md = (
+            ROOT / "dist" / "hermes" / "skills" / HERMES_CATEGORY / SKILL_NAME / "SKILL.md"
         )
+        self.assertTrue(skill_md.exists(), "Hermes paper-spine SKILL.md must ship")
+        self.assertEqual(frontmatter_value(skill_md, "name"), SKILL_NAME)
+        self.assertEqual(frontmatter_value(skill_md, "category"), HERMES_CATEGORY)
+        title = frontmatter_value(skill_md, "title")
+        self.assertIn("PaperSpine", title)
+        # 'triggers:' opens a YAML list; its bullet items must follow.
+        text = skill_md.read_text(encoding="utf-8")
+        self.assertIn("triggers:", text)
+        self.assertRegex(text, r"triggers:\s*\n\s*-\s+\S")
 
-    def test_all_suite_skills_ship_in_every_host(self) -> None:
-        for host in ("claude", "codex", "openclaw"):
-            for skill in SUITE_SKILLS:
-                self.assertTrue(
-                    (ROOT / "dist" / host / "skills" / skill / "SKILL.md").exists(),
-                    f"{host}:{skill} must be installed and visible",
-                )
-
-    def test_worker_descriptions_stay_under_portable_limit(self) -> None:
-        for skill in WORKER_SKILLS:
-            desc = frontmatter_value(ROOT / "dist" / "claude" / "skills" / skill / "SKILL.md", "description")
-            self.assertLessEqual(len(desc), 200, f"{skill} description exceeds 200 chars")
+    def test_hermes_body_matches_other_hosts(self) -> None:
+        """Hermes overlays frontmatter only; the orchestrator body is shared."""
+        hermes = (
+            ROOT / "dist" / "hermes" / "skills" / HERMES_CATEGORY / SKILL_NAME / "SKILL.md"
+        ).read_text(encoding="utf-8")
+        claude = (
+            ROOT / "dist" / "claude" / "skills" / SKILL_NAME / "SKILL.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("# PaperSpine Orchestrator", hermes)
+        body_marker = "# PaperSpine Orchestrator"
+        self.assertEqual(
+            hermes[hermes.index(body_marker):],
+            claude[claude.index(body_marker):],
+            "Hermes body must equal the shared orchestrator body",
+        )
 
 
 if __name__ == "__main__":

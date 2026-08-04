@@ -11,7 +11,15 @@ ROOT = Path(__file__).resolve().parents[1]
 WORD_GUARD = ROOT / "src" / "scripts" / "word_guard.py"
 
 MAIN_TEX = r"""\documentclass{article}
+\title{A Lightweight Method for Document Conversion Fidelity}
+\author{Jane Doe and John Smith}
 \begin{document}
+\maketitle
+\begin{abstract}
+We evaluate a lightweight method for document conversion fidelity. The pipeline
+is reproducible, inexpensive to run, and produces faithful output across the
+evaluated configurations.
+\end{abstract}
 \section{Introduction}
 This report evaluates a lightweight method for document conversion fidelity.
 Prior work \cite{devlin2019} established strong baselines for language
@@ -36,7 +44,13 @@ REFERENCES_BIB = """@article{devlin2019,
 
 @unittest.skipUnless(shutil.which("pandoc"), "pandoc not installed")
 class WordEndToEndTests(unittest.TestCase):
-    """End-to-end: LaTeX -> pandoc docx -> word_guard, exercising the real chain."""
+    """End-to-end: LaTeX -> pandoc docx -> word_guard, exercising the real chain.
+
+    The Word build in PaperSpine V4 always runs word_guard with --fix-fonts, which
+    normalizes the docx to Times New Roman and black headings (pandoc's default
+    theme uses Aptos / colored headings) before validating. This mirrors the real
+    pipeline: pandoc produces the docx, then word_guard fixes-and-checks it.
+    """
 
     def test_build_docx_from_latex_and_validate(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -60,7 +74,8 @@ class WordEndToEndTests(unittest.TestCase):
             self.assertGreater(docx.stat().st_size, 0)
 
             guard = subprocess.run(
-                [sys.executable, str(WORD_GUARD), str(docx), "--markdown"],
+                [sys.executable, str(WORD_GUARD), str(docx),
+                 "--fix-fonts", "--language", "en", "--markdown"],
                 cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
             )
             self.assertEqual(guard.returncode, 0, guard.stdout + guard.stderr)

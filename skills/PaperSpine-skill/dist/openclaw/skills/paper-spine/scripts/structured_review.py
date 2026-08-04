@@ -19,6 +19,8 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 from _paper_spine_utils import (
     make_canon,
     markdown_tables,
@@ -30,10 +32,49 @@ from _paper_spine_utils import (
 
 SECTION_RE = re.compile(r"\\(?:section|subsection|subsubsection)\*?\{([^{}]+)\}", re.IGNORECASE)
 
+# ---------------------------------------------------------------------------
+# Stage 5g: scene-aware reviewer personas
+# ---------------------------------------------------------------------------
 
-# ---------------------------------------------------------------------------
-# data types
-# ---------------------------------------------------------------------------
+SCENE_VALID = {"journal", "conference", "report_review", "competition"}
+
+SCENE_PERSONA_DEFAULTS: dict[str, dict[str, str]] = {
+    "journal": {
+        "methods": "Focus on originality, method rigor, evidence strength, reproducibility, and fit for the target journal.",
+        "contribution": "Assess the contribution's significance, differentiation from prior work, citation credibility, and alignment with journal standards.",
+        "clarity": "Evaluate structure clarity, argument coherence, figure/table quality, and adherence to journal conventions.",
+        "venue_hint": "journal",
+    },
+    "conference": {
+        "methods": "Focus on novelty, technical contribution, correctness under time-limited presentation constraints, and clarity for a conference audience.",
+        "contribution": "Assess whether the contribution is compelling for a conference track, properly scoped, and supported by clear evidence.",
+        "clarity": "Evaluate presentation quality, conciseness, visual clarity of figures/tables, and suitability for oral or poster presentation.",
+        "venue_hint": "conference",
+    },
+    "report_review": {
+        "methods": "Focus on coverage, logic, source synthesis, readability, and practical value for the report's stated purpose.",
+        "contribution": "Assess whether the report synthesizes sources effectively, presents a coherent argument, and delivers practical insights.",
+        "clarity": "Evaluate document organization, readability, heading structure, and whether findings are accessible to the intended audience.",
+        "venue_hint": "report or review",
+    },
+    "competition": {
+        "methods": "Focus on rubric alignment, deliverable completeness, visual/result clarity, innovation claim, and adherence to competition constraints.",
+        "contribution": "Assess the innovation claim, solution originality, and whether the entry satisfies competition evaluation criteria.",
+        "clarity": "Evaluate solution presentation, visual quality, result formatting, and overall persuasiveness for competition judges.",
+        "venue_hint": "competition",
+    },
+}
+
+
+@dataclass
+class ReviewerPersona:
+    role: str           # methods | contribution | clarity
+    title: str = ""
+    venue_context: str = ""
+    standards: str = ""
+    red_flags: str = ""
+    review_style: str = ""
+
 
 @dataclass
 class ReviewFinding:
@@ -73,10 +114,73 @@ class StructuredReviewReport:
     reviewers: list[ReviewerSection] = field(default_factory=list)
     editor: EditorSynthesis | None = None
     total_findings: int = 0
+    reviewer_personas: list[ReviewerPersona] = field(default_factory=list)
+    persona_warnings: list[str] = field(default_factory=list)
 
     @property
     def critical_count(self) -> int:
         return sum(1 for r in self.reviewers for f in r.findings if f.severity == "CRITICAL")
+
+
+def load_reviewer_personas(out_dir: Path) -> tuple[list[ReviewerPersona], list[str]]:
+    warnings: list[str] = []
+    config_path = out_dir / "paper_spine_config.json"
+    if not config_path.exists():
+        return _default_personas("journal"), warnings
+    try:
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return _default_personas("journal"), warnings
+    scene = str(config.get("scene", "journal"))
+    if scene not in SCENE_VALID:
+        scene = "journal"
+    target_name = str(config.get("target_name", "")).strip()
+    defs = SCENE_PERSONA_DEFAULTS.get(scene, SCENE_PERSONA_DEFAULTS["journal"])
+    venue_hint = defs.get("venue_hint", scene)
+    personas: list[ReviewerPersona] = []
+    for role_key in ("methods", "contribution", "clarity"):
+        p = ReviewerPersona(
+            role=role_key,
+            title=f"{role_key.title()} Reviewer ({venue_hint})",
+            venue_context=f"Target context: {target_name}" if target_name else f"Target venue type: {venue_hint}.",
+            standards=defs.get(role_key, ""),
+            review_style="Scene-aware structured review.",
+        )
+        personas.append(p)
+    rp = config.get("reviewer_persona")
+    if rp is not None:
+        if isinstance(rp, str) and rp.strip():
+            for p in personas:
+                p.review_style = rp.strip()
+        elif isinstance(rp, dict):
+            for role_key in ("methods", "contribution", "clarity"):
+                override = rp.get(role_key)
+                if isinstance(override, str) and override.strip():
+                    for p in personas:
+                        if p.role == role_key:
+                            p.review_style = override.strip()
+                elif override is not None:
+                    warnings.append(f"reviewer_persona['{role_key}']: expected string, ignored.")
+        else:
+            warnings.append(f"reviewer_persona: expected string or dict, got {type(rp).__name__} — ignored.")
+    return personas, warnings
+
+
+def _default_personas(scene: str = "journal") -> list[ReviewerPersona]:
+    if scene not in SCENE_VALID:
+        scene = "journal"
+    defs = SCENE_PERSONA_DEFAULTS[scene]
+    venue_hint = defs.get("venue_hint", scene)
+    personas: list[ReviewerPersona] = []
+    for role_key in ("methods", "contribution", "clarity"):
+        personas.append(ReviewerPersona(
+            role=role_key,
+            title=f"{role_key.title()} Reviewer ({venue_hint})",
+            venue_context=f"Target venue type: {venue_hint}.",
+            standards=defs.get(role_key, ""),
+            review_style="Scene-aware structured review.",
+        ))
+    return personas
 
 
 # ---------------------------------------------------------------------------
@@ -155,12 +259,20 @@ def check_evidence_available(out_dir: Path) -> dict[str, bool]:
 # review generation (prepares structure — LLM fills findings)
 # ---------------------------------------------------------------------------
 
-def generate_structured_review(out_dir: Path, manuscript_path: Path) -> StructuredReviewReport:
+def generate_structured_review(out_dir: Path, manuscript_path: Path,
+                             personas: list[ReviewerPersona] | None = None,
+                             persona_warnings: list[str] | None = None) -> StructuredReviewReport:
     sections = extract_sections(manuscript_path)
     rationale = parse_rationale_matrix(out_dir)
     evidence = check_evidence_available(out_dir)
 
-    report = StructuredReviewReport(str(manuscript_path), sections=sections)
+    if personas is None:
+        personas = _default_personas("journal")
+    if persona_warnings is None:
+        persona_warnings = []
+
+    report = StructuredReviewReport(str(manuscript_path), sections=sections,
+                                    reviewer_personas=personas, persona_warnings=persona_warnings)
 
     # Build a manuscript overview
     total_paras = sum(len(s["paragraphs"]) for s in sections)
@@ -369,11 +481,15 @@ def validate_independence(review_dir: Path) -> dict:
     }
 
 
-def dispatch_review(out_dir: Path, manuscript_path: Path) -> dict:
+def dispatch_review(out_dir: Path, manuscript_path: Path,
+                    personas: list[ReviewerPersona] | None = None) -> dict:
     """Generate three independent reviewer prompt files for multi-agent execution."""
     sections = extract_sections(manuscript_path)
     prompts_dir = out_dir / "review_prompts"
     prompts_dir.mkdir(parents=True, exist_ok=True)
+
+    if personas is None:
+        personas = _default_personas("journal")
 
     # Build manuscript section summary
     section_text = "\n\n".join(
@@ -385,6 +501,7 @@ def dispatch_review(out_dir: Path, manuscript_path: Path) -> dict:
         {
             "file": "methods_reviewer.md",
             "role": "Methods & Reproducibility Reviewer",
+            "role_key": "methods",
             "focus": (
                 "Assess methodological clarity, reproducibility, assumption "
                 "justification, experimental design, and limitations."
@@ -399,6 +516,7 @@ def dispatch_review(out_dir: Path, manuscript_path: Path) -> dict:
         {
             "file": "contribution_reviewer.md",
             "role": "Contribution & Novelty Reviewer",
+            "role_key": "contribution",
             "focus": (
                 "Assess novelty, significance, differentiation from prior work, "
                 "and evidence-to-claim strength."
@@ -413,6 +531,7 @@ def dispatch_review(out_dir: Path, manuscript_path: Path) -> dict:
         {
             "file": "clarity_reviewer.md",
             "role": "Structure & Clarity Reviewer",
+            "role_key": "clarity",
             "focus": (
                 "Assess organization, argument flow, figure/table integration, "
                 "section transitions, and writing clarity."
@@ -428,8 +547,22 @@ def dispatch_review(out_dir: Path, manuscript_path: Path) -> dict:
 
     file_list: list[str] = []
     for cfg in reviewer_configs:
+        # Look up persona for this role
+        persona = next((p for p in personas if p.role == cfg["role_key"]), None)
+        persona_block = ""
+        if persona:
+            persona_block = (
+                f"## Reviewer Persona\n\n"
+                f"**Venue context:** {persona.venue_context}\n\n"
+                f"**Standards:** {persona.standards}\n\n"
+                f"**Review style:** {persona.review_style}\n\n"
+                f"Do not fabricate specific submission rules for the target venue. "
+                f"Only use what is known from the research stage or user-provided materials.\n\n"
+            )
+
         prompt = (
             f"# {cfg['role']}\n\n"
+            f"{persona_block}"
             f"## Role\n\n{cfg['focus']}\n\n"
             f"**IMPORTANT:** You are an independent reviewer. Do NOT read or "
             f"reference the other reviewers' work. Your assessment must stand "
@@ -491,9 +624,31 @@ def to_markdown(report: StructuredReviewReport) -> str:
         "> Each finding maps to a rationale matrix row, links to evidence status, "
         "and provides a concrete revision command — not just 'improve this'.",
         "",
+    ]
+
+    # Reviewer Personas section
+    if report.reviewer_personas:
+        lines.append("## Reviewer Personas")
+        lines.append("")
+        for p in report.reviewer_personas:
+            lines.append(f"### {p.title}")
+            lines.append(f"- **Context:** {p.venue_context}")
+            lines.append(f"- **Standards:** {p.standards}")
+            if p.red_flags:
+                lines.append(f"- **Red flags:** {p.red_flags}")
+            lines.append(f"- **Style:** {p.review_style}")
+            lines.append("")
+        if report.persona_warnings:
+            lines.append("### Persona Warnings")
+            lines.append("")
+            for w in report.persona_warnings:
+                lines.append(f"- {w}")
+            lines.append("")
+
+    lines.extend([
         "---",
         "",
-    ]
+    ])
 
     # Reviewers
     for reviewer in report.reviewers:
@@ -589,11 +744,13 @@ def main() -> int:
     out_dir = Path(args.output_dir)
     manuscript_path = Path(args.manuscript) if args.manuscript else out_dir / "final_paper" / "main.tex"
 
+    personas, persona_warnings = load_reviewer_personas(out_dir)
+
     if args.dispatch:
         if not manuscript_path.exists():
             print(f"Manuscript not found: {manuscript_path}", file=sys.stderr)
             return 2
-        result = dispatch_review(out_dir, manuscript_path)
+        result = dispatch_review(out_dir, manuscript_path, personas)
         if args.json:
             print(json.dumps(result, ensure_ascii=False, indent=2))
         else:
@@ -612,7 +769,7 @@ def main() -> int:
             print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0 if result["ok"] else 1
 
-    report = generate_structured_review(out_dir, manuscript_path)
+    report = generate_structured_review(out_dir, manuscript_path, personas, persona_warnings)
 
     if args.json:
         print(json.dumps({
@@ -624,6 +781,12 @@ def main() -> int:
                 {"role": r.role, "findings_count": len(r.findings)}
                 for r in report.reviewers
             ],
+            "reviewer_personas": [
+                {"role": p.role, "title": p.title, "venue_context": p.venue_context,
+                 "standards": p.standards, "review_style": p.review_style}
+                for p in report.reviewer_personas
+            ],
+            "persona_warnings": report.persona_warnings,
         }, ensure_ascii=False, indent=2))
     if args.markdown or not args.json:
         print(to_markdown(report))

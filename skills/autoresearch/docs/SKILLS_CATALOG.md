@@ -1,6 +1,6 @@
 # ARIS Skills Catalog
 
-Every skill that ships with ARIS, grouped by role. **79 skills** as of the
+Every skill that ships with ARIS, grouped by role. **82 skills** as of the
 latest update; new skills land via PR and get added to the table below.
 
 - Each `Skill` link goes to the canonical `SKILL.md` (the LLM-readable spec).
@@ -52,6 +52,7 @@ Paper retrieval, summarization, novelty verification.
 | [`/semantic-scholar`](../skills/semantic-scholar/SKILL.md) | Published-venue paper search (IEEE / ACM / Springer) — citation counts, venue metadata, TLDR | None (rate-limited without S2 API key) |
 | [`/deepxiv`](../skills/deepxiv/SKILL.md) | Progressive paper reading — search → brief → head → section → trending → web search | `pip install deepxiv-sdk` |
 | [`/exa-search`](../skills/exa-search/SKILL.md) | AI-powered broad web search with content extraction — blogs, docs, news, papers | `pip install exa-py` + `EXA_API_KEY` |
+| [`/web-debug-search`](../skills/web-debug-search/SKILL.md) | Multi-source debugging search across GitHub, Stack Exchange, Chinese technical communities, and general web — routing, compatibility, and discovery-only results | None |
 | [`/openalex`](../skills/openalex/SKILL.md) | OpenAlex API search — 250M+ open citation graph, institutional affiliations, funding data | `pip install requests` |
 | [`/gemini-search`](../skills/gemini-search/SKILL.md) | Gemini-driven literature discovery — decomposes topics into sub-problems, aliases, variants | `gemini-cli` v0.40+ |
 | [`/alphaxiv`](../skills/alphaxiv/SKILL.md) | Quick single-paper lookup via [AlphaXiv](https://alphaxiv.org) — three-tier fallback (overview → markdown → LaTeX source) | None |
@@ -69,6 +70,14 @@ Generating, refining, planning research ideas before implementation.
 | [`/experiment-plan`](../skills/experiment-plan/SKILL.md) | Turn a refined proposal into a claim-driven experiment roadmap — ablations, budgets, run order | None |
 | [`/ablation-planner`](../skills/ablation-planner/SKILL.md) | Design ablation studies from a reviewer's perspective (after main results pass `/result-to-claim`) | Codex MCP |
 | [`/formula-derivation`](../skills/formula-derivation/SKILL.md) | Structure theory derivations — organize assumptions, build derivation chains, turn scattered equations into coherent narrative | None |
+
+## 🧠 Proof Engineering
+
+Orchestrating and independently auditing mathematical proofs.
+
+| Skill | Role | Requires |
+|---|---|---|
+| [`/proof-orchestrator`](../skills/proof-orchestrator/SKILL.md) | Stateful proof-run orchestration: run directories, cross-run continuation, manual GPT Pro handoff packages, optional DeepSeek second opinion (additional evidence only — `/proof-writer` drafts proofs, `/proof-checker` owns verification and submission acceptance) | None by default; llm-chat MCP only for optional DeepSeek review |
 
 ## 🧪 Experiments & Infrastructure
 
@@ -99,6 +108,7 @@ Cross-model critique, integrity checking, evidence verification.
 | [`/citation-audit`](../skills/citation-audit/SKILL.md) | Bibliography audit — existence + metadata correctness + context appropriateness for every `\cite{}`; `--soft-only` mode for frozen-bib resubmits | Codex MCP, web access |
 | [`/proof-checker`](../skills/proof-checker/SKILL.md) | Rigorous mathematical proof verification — 20-category issue taxonomy, two-axis severity, side-condition checklists, counterexample red team, proof-obligation ledger | Codex MCP |
 | [`/kill-argument`](../skills/kill-argument/SKILL.md) | Two-thread adversarial review — Thread 1 writes the strongest 200-word rejection memo; Thread 2 (independent) defends point-by-point and surfaces still-unresolved issues | Codex MCP |
+| [`/integrity-forensics`](../skills/integrity-forensics/SKILL.md) | SHA-pinned thin launcher for [Anti-Autoresearch](https://github.com/wanshuiyin/Anti-Autoresearch) — evidence-ledger forensic sweep (46 patterns, deterministic adjudicator) → typed BLOCK/WARN/NO_NEW_BLOCKER gate + append-only obligations ledger; default pre-submission self-audit in `/paper-writing` | git, Codex MCP (via upstream) |
 
 ## 📝 Paper Writing & Figures
 

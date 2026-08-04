@@ -1,21 +1,35 @@
 # Suite Map
 
-PaperSpine is split into task-focused skills:
+PaperSpine is a single orchestrator skill. Each stage reads its playbook from
+`references/*.md`:
 
-| Skill | Responsibility |
+| Stage Playbook | Responsibility |
 |---|---|
-| `paper-spine` | route the workflow |
-| `paper-spine-ui` | launch external terminal configuration UI |
-| `paper-spine-intake` | collect configuration |
-| `paper-spine-research` | index local references, research target scene, and learn examples |
-| `paper-spine-citation` | build citation support candidates |
-| `paper-spine-rewrite` | rewrite an existing draft |
-| `paper-spine-build` | build from a materials folder |
-| `paper-spine-latex` | assemble and guard LaTeX |
-| `paper-spine-translate` | produce complete translation_zh/ with row-by-row translation |
-| `paper-spine-humanize` | reduce AI detection patterns via tiered stylistic constraints |
-| `paper-spine-audit` | check completeness, integrity audit, structured review, and translation coverage |
-| `paper-spine-update` | check and update local PaperSpine installs |
+| `references/intake.md` | collect configuration |
+| `references/research.md` | index local references, research target scene, and learn examples |
+| `references/citation.md` | build citation support candidates |
+| `references/rewrite.md` | rewrite an existing draft |
+| `references/build.md` | build from a materials folder |
+| `references/humanize.md` | reduce AI detection patterns via tiered stylistic constraints |
+| `references/latex.md` | assemble and guard LaTeX |
+| `references/translate.md` | produce complete translation_zh/ with row-by-row translation |
+| `references/audit.md` | check completeness, integrity audit, structured review, and translation coverage |
+| `references/update.md` | check and update local PaperSpine installs |
+| `references/submission.md` | submission materials package |
 
-Use the orchestrator for end-to-end tasks. Use a child skill directly when the
-user asks for that stage only.
+> Historical worker skills (`paper-spine-ui`, `paper-spine-intake`, etc.) were
+> removed in architecture convergence Stage 2b.  All stage logic now lives in
+> `references/*.md` playbooks.
+
+## Supplementary Deep-Revision Methods
+
+These are detailed, optional sub-methods invoked from a stage playbook above, not
+separate stages. Use them when the inputs they need (e.g. a deep-read journal
+corpus) are available:
+
+| Method | Invoked from | What it adds |
+|---|---|---|
+| `references/round1-literature-revision.md` | `rewrite.md` | motivation-thread extraction, move-guided section rewrite, numerical + cross-section audit |
+| `references/round2-journal-revision.md` | `humanize.md` | CASPArS "Three R's" corpus-based style calibration + Style Conformity Checklist |
+| `references/round3-latex-polish.md` | `latex.md` | template-first Markdown→LaTeX conversion + native-English polishing |
+| `references/round4-template-integration.md` | `latex.md` | journal-template integration, compile-and-fix, content-integrity verification |

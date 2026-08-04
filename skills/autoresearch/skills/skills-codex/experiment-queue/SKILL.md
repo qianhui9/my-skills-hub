@@ -1,7 +1,7 @@
 ---
 name: experiment-queue
 description: SSH job queue for multi-seed/multi-config ML experiments with OOM-aware retry, stale-screen cleanup, and wave-transition race prevention. Use when user says "batch experiments", "队列实验", "run grid", "multi-seed sweep", "auto-chain experiments", or when /run-experiment is insufficient for 10+ jobs that need orchestration.
-argument-hint: [manifest-or-grid-spec]
+argument-hint: "[manifest-or-grid-spec]"
 allowed-tools: Bash(*), Read, Grep, Glob, Edit, Write, Skill(run-experiment), Skill(monitor-experiment)
 ---
 
@@ -37,6 +37,12 @@ Based on session audit (2026-04-16), the major wall-clock sinks in multi-seed gr
 All of these are pure engineering friction that can be orchestrated.
 
 ## Core Concepts
+
+> **Environment contract**: queue jobs assume the target env is already built
+> and validated per `../shared-references/compute-env-contract.md` (spec-hash
+> ledger + kernel witness). A wave of jobs dying at import time = the env
+> contract was skipped, not a queue bug; check the provider's
+> `.aris/compute/<provider>.md` ledger before re-queueing.
 
 ### Job Manifest
 
@@ -83,6 +89,16 @@ pending → running → completed
                  ↘ failed_other → stuck (needs manual inspection)
 stale_screen_detected → cleaned → pending
 ```
+
+> **Operator note on `stuck` (the agent's move, not the queue's):** the queue
+> deterministically parks `failed_other` jobs as `stuck` — that part is code and
+> unchanged. Before handing a `stuck` batch to the human, the OPERATING AGENT
+> should check: if the same failure repeats across jobs, try ONE clean
+> reimplement of the **agent-generated wrapper/attempt script only** — never
+> user/project source, the manifest, queue state, logs, or results (per
+> [`external-cadence.md`](../shared-references/external-cadence.md), "Let a broken attempt restart, not just patch").
+> Reserve the human handoff for contract/environment doubts, not merely broken
+> attempt code.
 
 ### Wave Orchestration
 

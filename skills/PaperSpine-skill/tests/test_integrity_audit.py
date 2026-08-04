@@ -14,6 +14,7 @@ from integrity_audit import (
     audit_artifacts,
     audit_evidence_chain,
     audit_integrity_patterns,
+    audit_process_language,
     audit_reasoning_depth,
     to_markdown,
 )
@@ -104,6 +105,60 @@ class IntegrityAuditTests(unittest.TestCase):
         tmp.joinpath("final_paper").rmdir()
         dim = audit_integrity_patterns(tmp, {})
         self.assertTrue(any("No manuscript" in f.what_was_found for f in dim.findings))
+
+    def test_orphan_citation_splits_grouped_cites(self) -> None:
+        # Regression: \cite{a,b,c} must be split into individual keys before the
+        # orphan check; the whole "a,b,c" string is not a single bib key.
+        tmp = _make_out_dir(**{
+            "final_paper/main.tex": (
+                r"""\section{Intro}
+Background work \cite{a,b,c} and a single cite \cite{a}. """ + "x " * 60 + "\n"
+            ),
+            "final_paper/references.bib": (
+                "@article{a, title={A}}\n@article{b, title={B}}\n@article{c, title={C}}\n"
+            ),
+        })
+        dim = audit_integrity_patterns(tmp, {})
+        joined = " ".join(f.what_was_found for f in dim.findings)
+        self.assertNotIn("Orphan", joined)
+
+    def test_orphan_citation_still_flags_real_orphan(self) -> None:
+        tmp = _make_out_dir(**{
+            "final_paper/main.tex": (
+                r"""\section{Intro}
+Grouped \cite{a,missingkey} here. """ + "x " * 60 + "\n"
+            ),
+            "final_paper/references.bib": "@article{a, title={A}}\n",
+        })
+        dim = audit_integrity_patterns(tmp, {})
+        joined = " ".join(f.what_was_found for f in dim.findings)
+        self.assertIn("Orphan", joined)
+        self.assertIn("missingkey", joined)
+
+    def test_audit_process_language_flags_meta_narrative(self) -> None:
+        tmp = _make_out_dir(**{
+            "final_paper/main.tex": (
+                r"""\section{引言}
+针对导师对前期初稿的审阅意见，本文沿一条主线重新组织：传统客服痛点到大模型机遇到检索必要性。
+"""
+            ),
+        })
+        dim = audit_process_language(tmp, {})
+        self.assertEqual(dim.status, "BLOCKED")
+        self.assertTrue(any(f.id == "PRL-001" for f in dim.findings))
+
+    def test_audit_process_language_allows_legitimate_arrow_chain(self) -> None:
+        # A failure-pathway / data-flow arrow chain is legitimate analytical
+        # content and must NOT be flagged as meta-narrative.
+        tmp = _make_out_dir(**{
+            "final_paper/main.tex": (
+                r"""\section{错误分析}
+失败链路为：指代消解缺失 $\rightarrow$ 意图漂移 $\rightarrow$ 错误检索 $\rightarrow$ 答非所问。
+"""
+            ),
+        })
+        dim = audit_process_language(tmp, {})
+        self.assertEqual(dim.status, "CLEAN")
 
     def test_to_markdown_includes_teaching(self) -> None:
         dim = AuditDimension("Test")

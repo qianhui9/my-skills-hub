@@ -20,6 +20,7 @@ COMMON_ARTIFACTS = [
     "sota_gap_map.md",
     "motivation_options_after_research.md",
     "citation_support_bank.md",
+    "confirmed_contribution.md",
     "confirmed_motivation.md",
     "section_blueprints.md",
     "writing_rationale_matrix.md",
@@ -98,15 +99,15 @@ def valid_citation_bank(count: int = 60) -> str:
     lines = [
         "# Citation Support Bank",
         "",
-        "| Candidate ID | Reference/BibTeX | Year | Recency | Supports Section | Support Claim Sentence | Why This Paper Fits | Source |",
-        "|---|---|---|---|---|---|---|---|",
+        "| Candidate ID | Reference/BibTeX | Year | Recency | Supports Section | Support Claim Sentence | Why This Paper Fits | Source | Source Channel |",
+        "|---|---|---|---|---|---|---|---|---|",
     ]
     for index in range(1, count + 1):
         year = 2023 + (index % 4)
         lines.append(
             f"| C{index:03d} | @article{{ref{index}, title={{Reference {index}}}, year={{{year}}}, doi={{10.0000/ref{index}}}}} | {year} | recent | Introduction/Discussion | "
             f"Recent work {index} supports the manuscript sentence that related studies motivate this problem and justify a bounded claim. | "
-            f"It is a same-field, adjacent, foundational, benchmark, or application reference that can support one specific literature statement. | REF{index:03d} |"
+            f"It is a same-field, adjacent, foundational, benchmark, or application reference that can support one specific literature statement. | REF{index:03d} | local |"
         )
     lines.append("")
     return "\n".join(lines)
@@ -210,7 +211,7 @@ class ArtifactCheckTests(unittest.TestCase):
     def test_build_complete_minimal_artifacts_pass(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(tmp)
-            config = {"workflow": "build_from_materials", "tier": "pro"}
+            config = {"workflow": "build_from_materials", "tier": "pro", "word_output": "none"}
             write_artifacts(output, COMMON_ARTIFACTS + BUILD_ARTIFACTS, config)
             write_final_tex(output, pdf=True)
             result = run_check(output, "build_from_materials", "--pdf-policy", "always")
@@ -230,7 +231,7 @@ class ArtifactCheckTests(unittest.TestCase):
     def test_build_without_pdf_can_pass_when_pdf_policy_never(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(tmp)
-            config = {"workflow": "build_from_materials", "tier": "flash"}
+            config = {"workflow": "build_from_materials", "tier": "flash", "word_output": "none"}
             write_artifacts(output, COMMON_ARTIFACTS + BUILD_ARTIFACTS, config)
             write_final_tex(output)
             result = run_check(output, "build_from_materials", "--pdf-policy", "never")
@@ -293,6 +294,7 @@ class ArtifactCheckTests(unittest.TestCase):
                 "tier": "flash",
                 "output_language": "en",
                 "translation_package": "zh",
+                "word_output": "none",
             }
             write_artifacts(output, COMMON_ARTIFACTS + BUILD_ARTIFACTS, config)
             write_final_tex(output)
@@ -315,6 +317,7 @@ class ArtifactCheckTests(unittest.TestCase):
                 "tier": "pro",
                 "output_language": "en",
                 "translation_package": "zh",
+                "word_output": "none",
             }
             write_artifacts(output, COMMON_ARTIFACTS + REWRITE_ARTIFACTS, config)
             write_artifacts(output, TRANSLATION_COMMON, config)

@@ -1,13 +1,15 @@
 ---
 name: paper-slides
 description: "Generate conference presentation slides (beamer LaTeX → PDF + editable PPTX) from a compiled paper, with speaker notes and full talk script. Use when user says \"做PPT\", \"做幻灯片\", \"make slides\", \"conference talk\", \"presentation slides\", \"生成slides\", \"写演讲稿\", or wants beamer slides for a conference talk."
-argument-hint: [paper-directory-or-talk-length]
+argument-hint: "[paper-directory-or-talk-length]"
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, mcp__gemini-review__review, mcp__gemini-review__review_start, mcp__gemini-review__review_reply_start, mcp__gemini-review__review_status
 ---
 
 > Override for Codex users who want **Gemini**, not a Codex-MCP reviewer, to act as the reviewer. Install this package **after** `skills/skills-codex/*`.
 
 # Paper Slides: From Paper to Conference Talk
+
+> **Gemini overlay assurance:** `review_independence: cross-family` and `acceptance_status: accepted`.
 
 Generate conference presentation slides from: **$ARGUMENTS**
 
@@ -44,7 +46,7 @@ Unlike posters (single page, visual-first), slides tell a **temporal story**: ea
 
 ## Venue Color Schemes
 
-Same as `/paper-poster`:
+Same as `/paper-poster-html`:
 
 | Venue | Primary | Accent | Background | Text |
 |-------|---------|--------|------------|------|

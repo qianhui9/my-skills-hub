@@ -50,14 +50,19 @@ class CitationQualityAuditTests(unittest.TestCase):
                 '{"workflow": "rewrite_existing", "scene": "journal", "citation_target_count": 20}',
                 encoding="utf-8",
             )
+            # V4 find_citation_table requires the header to expose a claim *sentence*
+            # column (not just "Claim"), so the bank must use the canonical headers.
             _make_bank(out_dir / "citation_support_bank.md",
-                "| ID | Reference | Year | Recency | Section | Claim | Why | Source |\n"
+                "| Candidate ID | Reference | Year | Recency | Supports Section | Support Claim Sentence | Why | Source |\n"
                 "|---|---|---|---|---|---|---|---|\n"
                 "| 1 | Smith 2024 https://doi.org/10.1234/test.1 | 2024 | yes | Intro | X | Y | web |\n"
             )
             report = audit_citations(out_dir, no_api=True, timeout=30, delay=0)
             self.assertEqual(len(report.entries), 1)
             self.assertEqual(report.scene, "journal")
+            # V4 no_api semantics: a DOI-bearing row is not API-verified, so it stays
+            # "pending" (it does not get promoted to verified offline).
+            self.assertEqual(report.entries[0].status, "pending")
 
     def test_report_gap_analysis(self) -> None:
         report = CitationQualityReport("test", "journal", 20)

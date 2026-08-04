@@ -92,7 +92,7 @@ pip3 install -r mcp-servers/llm-chat/requirements.txt
 bash /path/to/aris_repo/tools/install_aris.sh /path/to/your-project
 ```
 
-Do not pass `$PWD` from inside the ARIS repo itself. The installer should target your paper or experiment project, not the ARIS checkout. It manages per-skill symlinks, the installed-skill manifest, the `.aris/tools/` helper chain, and reconcile/uninstall/migration paths.
+Do not pass `$PWD` from inside the ARIS repo itself. The installer should target your paper or experiment project, not the ARIS checkout. It manages per-skill symlinks, the installed-skill manifest, the `.aris/tools/` helper chain (plus the global pointer file `~/.aris/repo`, which lets the same chain resolve even for a global copy-install with no per-project manifest), and reconcile/uninstall/migration paths.
 
 ### Step 4: Deploy the llm-chat MCP Server
 
@@ -208,7 +208,7 @@ claude
 | | Default | Coding Plan | ModelScope | **OpenRouter** |
 |---|---|---|---|---|
 | Executor | Claude Opus | kimi-k2.5 | DeepSeek-V3 | 200+ models available |
-| Reviewer | GPT-5.5 xhigh fresh thread | glm-5 | DeepSeek-R1 | 200+ pinned models available |
+| Reviewer | GPT-5.6-Sol xhigh fresh thread | glm-5 | DeepSeek-R1 | 200+ pinned models available |
 | Free Options | No | No | **Yes, 2000/day subject to current ModelScope policy** ([source](https://developer.aliyun.com/article/1644361)) | **Yes, free models subject to OpenRouter limits** |
 | API Key Count | 2 | 1 | 1 | **1** |
 | Model Selection | Limited | 4 types | 1000+ types | **200+ types** |

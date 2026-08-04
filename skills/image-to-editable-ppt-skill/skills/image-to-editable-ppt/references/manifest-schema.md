@@ -2,6 +2,17 @@
 
 This document describes the responsibilities, owners, and current field contracts for `editppt` run/page JSON files. All key state is advanced by `editppt` commands; page reconstructors write only page-local files.
 
+## Contents
+
+- `deck_manifest.json`
+- `page_jobs.json`
+- `page_request.json`
+- `page_result.json`
+- `pages/page_NNN/validation.json`
+- `pages/page_NNN/manifest.json`
+- `pages/page_NNN/imagegen-jobs.json`
+- `notes_manifest.json`
+
 ## `deck_manifest.json`
 
 Owner: created by `editppt prepare`; `editppt run backend` may update the image backend; `editppt run finalize` reads it and writes completion time.
@@ -24,14 +35,47 @@ Key fields:
   "run_id": "job-id",
   "input_type": "image|images|pdf|pptx",
   "max_concurrent_pages": 6,
-  "image_backend": {},
+  "image_backend": {
+    "backend_id": "builtin-imagegen",
+    "tool_name": "image_gen.imagegen",
+    "required_parameters": {
+      "generate": ["prompt"],
+      "edit": ["prompt", "referenced_image_paths"]
+    },
+    "input_context_policy": "generate with prompt; before editing, view_image each input, then use prompt plus absolute local referenced_image_paths",
+    "save_path_policy": "use only an explicit valid local result/output_hint path, then editppt image import; never scan for a newest file",
+    "fallback_command": "editppt image generate/edit",
+    "fallback_order": ["codex-oauth", "openai-compatible-api"],
+    "fallback_policy": {
+      "on": [
+        "tool-unavailable",
+        "tool-error",
+        "input-unreadable",
+        "no-valid-local-output"
+      ],
+      "missing_optional_parameters": false
+    }
+  },
   "pages": [],
   "notes_manifest": "notes_manifest.json",
   "output": "final/origin_edited.pptx"
 }
 ```
 
-`image_backend` is written with defaults by `editppt prepare` and may be overwritten by `editppt run backend` when needed.
+`image_backend` is written by `editppt prepare` and may be overwritten by `editppt run backend` when needed. Parent-level backend selection policy lives in `SKILL.md` subsection "Image Backend Selection".
+
+For `backend_id: "builtin-imagegen"`, these fields are required and have fixed meanings:
+
+- `tool_name`: `image_gen.imagegen`, an agent tool rather than a Python or shell API.
+- `required_parameters`: the complete required argument sets. Generation needs `prompt`; editing needs `prompt` plus absolute local paths in `referenced_image_paths`.
+- `input_context_policy`: requires `view_image` on every edit input before the built-in call; generation has no image input.
+- `save_path_policy`: permits only an explicit valid local result path, including `output_hint`, followed by `editppt image import`; newest-file directory scanning is forbidden.
+- `fallback_command`: the CLI surface used only after the fallback policy matches.
+- `fallback_order`: the CLI's internal order, Codex OAuth before a configured OpenAI-compatible API.
+- `fallback_policy.on`: the only events that permit leaving the built-in tool: it is unavailable/not callable, its call errors, an edit input is unreadable, or it returns no valid local image.
+- `fallback_policy.missing_optional_parameters`: always `false`; absent optional controls never authorize fallback.
+
+Other backend metadata may describe model labels, runtime homes, or handoff text, but it does not change this order. Parent-level tool selection and user-interaction policy live in `SKILL.md` subsection "Image Backend Selection"; page reconstructors execute the copied contract above.
 
 ## `page_jobs.json`
 
@@ -91,7 +135,7 @@ Must not include:
 - `imagegen_required` prediction
 - object-level decisions
 
-If the run uses an image backend, `page_request.json` must contain the same `image_backend`.
+If the run uses an image backend, `page_request.json` must contain the same `image_backend` object without weakening or reordering its `fallback_policy` or `fallback_order`.
 
 `slide` and `content_box` are computed automatically by `editppt prepare`. Inputs close to 16:9 use the standard widescreen canvas; other inputs use a custom canvas converted from the source image pixel dimensions. The agent must copy these two fields into the page `manifest.json` and must not compress, stretch, or recalculate the canvas.
 
@@ -186,6 +230,12 @@ Text-size fitting:
 - Keep default fitting enabled for first drafts. Set `fit_text: false` only when the page author has manually calibrated the box and font size.
 - `text_boxes[].box_px` should describe the source text bounds plus modest padding. Do not use an entire card, chart, table cell group, or unrelated container as the text box, because the fitter can only infer size from the box it receives.
 - Optional tuning fields are `min_font_size`, `max_font_size`, `text_fit_safety`, and `line_height`.
+
+Text alignment:
+
+- `text_boxes[].align` accepts `left`, `center`, or `right` (default `left`). The equivalent DrawingML tokens `l`, `ctr`, and `r` are also accepted.
+- `text_boxes[].valign` accepts `top`, `middle`, or `bottom` (default `top`); `center` is an alias for `middle`. The equivalent DrawingML tokens `t`, `ctr`, and `b` are also accepted.
+- The deterministic builder translates these manifest values to valid DrawingML enum tokens. Unsupported values are page-contract violations instead of silently falling back to an application default.
 
 `text_inventory` may be a list of strings or a list of structured objects. In structured objects, the fields used for exact text validation are `text`, `required_text`, `items`, or `texts`; fields such as `id`, `decision`, `description`, and `note` are only records and are not used for exact text matching. Example:
 
@@ -282,6 +332,28 @@ Formula images must be generated by `editppt formula render-latex`. Do not use s
 Owner: created by `editppt prepare`, updated by `editppt image import` and `editppt image process-sheet` (`generate`/`edit` do not write it — importing the selected output is what records the job).
 
 Purpose: record the generation and processing process for clean bases, asset sheets, and selected bitmap assets.
+
+Each imported job records at least the selected output and the backend that actually produced it:
+
+```json
+{
+  "schema_version": 1,
+  "jobs": [
+    {
+      "job_id": "icon-sheet",
+      "role": "asset_sheet",
+      "status": "recorded",
+      "source_image": "/absolute/path/from/tool-output.png",
+      "output": "assets/icon-sheet.png",
+      "output_sha256": "...",
+      "backend": "builtin-imagegen",
+      "fallback_reason": null
+    }
+  ]
+}
+```
+
+`backend` is the actual producer: `builtin-imagegen`, `codex-oauth`, or `openai-compatible-api`; `unknown` is reserved for legacy page directories that have no `image_backend` contract. `editppt image import` requires an explicit producer, rejects files that are not readable images, and checks `backend`/`fallback_reason` against the page contract. `fallback_reason` is `null` when the preferred backend succeeded or the run selected a CLI contract directly; when a built-in contract enters its CLI fallback, it records the matching event from `image_backend.fallback_policy.on`.
 
 State and provenance record rules are described in the State Principles section of `SKILL.md` and in the asset processing examples in `cli-helper.md`.
 

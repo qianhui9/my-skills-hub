@@ -92,7 +92,7 @@ pip3 install -r mcp-servers/llm-chat/requirements.txt
 bash /path/to/aris_repo/tools/install_aris.sh /path/to/your-project
 ```
 
-不要在 ARIS repo 内部把 `$PWD` 作为目标传入。安装目标应是你的论文或实验项目，而不是 ARIS checkout 本身。安装器会管理 per-skill symlink、installed-skill manifest、`.aris/tools/` helper chain，以及 reconcile / uninstall / migration 路径。
+不要在 ARIS repo 内部把 `$PWD` 作为目标传入。安装目标应是你的论文或实验项目，而不是 ARIS checkout 本身。安装器会管理 per-skill symlink、installed-skill manifest、`.aris/tools/` helper chain（以及全局指针文件 `~/.aris/repo`——即便是没有项目内 manifest 的全局 copy-install，同一条链也能借它解析成功），以及 reconcile / uninstall / migration 路径。
 
 ### Step 4：部署 llm-chat MCP 服务器
 
@@ -208,7 +208,7 @@ claude
 | | 默认方案 | Coding Plan | ModelScope | **OpenRouter** |
 |---|---|---|---|---|
 | 执行者 | Claude Opus | kimi-k2.5 | DeepSeek-V3 | 200+ 模型可选 |
-| 审稿人 | GPT-5.5 xhigh fresh thread | glm-5 | DeepSeek-R1 | 200+ 固定模型可选 |
+| 审稿人 | GPT-5.6-Sol xhigh fresh thread | glm-5 | DeepSeek-R1 | 200+ 固定模型可选 |
 | 免费选项 | 无 | 无 | **有，2000 次/天，受当前 ModelScope 政策限制**（[来源](https://developer.aliyun.com/article/1644361)） | **有，免费模型受 OpenRouter 限额影响** |
 | API Key 数量 | 2 个 | 1 个 | 1 个 | **1 个** |
 | 模型选择 | 受限 | 4 种 | 1000+ 种 | **200+ 种** |

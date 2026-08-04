@@ -4,45 +4,45 @@
 
 Don't have Claude / OpenAI API access? You can swap in other models — same cross-model architecture, different providers.
 
-> ⭐ **We strongly recommend Claude + GPT-5.5 (default setup).** It's the most tested and reliable combination. Alternative setups work but may require prompt tuning.
+> ⭐ **We strongly recommend Claude + GPT-5.6-Sol (default setup).** It's the most tested and reliable combination. Alternative setups work but may require prompt tuning.
 
-Beyond the default Claude × GPT-5.5 route, ARIS ships **10 alternative routes (Alt A-I + C.1)** covering Z.ai's GLM, Alibaba's Kimi/Qwen/GLM/MiniMax bundle, ModelScope's free DeepSeek-V3.1, Codex-as-executor with Claude or Gemini reviewers, and Google Antigravity as the executor.
+Beyond the default Claude × GPT-5.6-Sol route, ARIS ships **10 alternative routes (Alt A-I + C.1)** covering Z.ai's GLM, Alibaba's Kimi/Qwen/GLM/MiniMax bundle, ModelScope's free DeepSeek-V3.1, Codex-as-executor with Claude or Gemini reviewers, and Google Antigravity as the executor.
 
 <details>
 <summary><b>Show full routing table</b> — Default + Alt A-I × executor / reviewer / Claude-API needed / OpenAI-API needed / guide link</summary>
 
 | | Executor | Reviewer | Need Claude API? | Need OpenAI API? | Guide |
 |---|----------|----------|:---:|:---:|-------|
-| **Default** ⭐ | Claude Opus/Sonnet | GPT-5.5 (Codex MCP) | Yes | Yes | [Quick Start](#quick-start) |
-| **Alt A** | GLM-5 (Z.ai) | GPT-5.5 (Codex MCP) | No | Yes | [Setup below](#alt-a-glm--gpt) |
-| **Alt B** | GLM-5 (Z.ai) | MiniMax-M3 | No | No | [MINIMAX_MCP_GUIDE](docs/MINIMAX_MCP_GUIDE.md) |
-| **Alt C** | Any CC-compatible | Any OpenAI-compatible | No | No | [LLM_API_MIX_MATCH_GUIDE](docs/LLM_API_MIX_MATCH_GUIDE.md) |
-| **Alt C.1** | Claude / any CC-compatible | OpenRouter pinned model via `llm-chat` | Optional | No | [OPENROUTER_GUIDE](docs/OPENROUTER_GUIDE.md) |
-| **Alt D** | Kimi-K2.5 / Qwen3.5+ | GLM-5 / MiniMax-M3 | No | No | [ALI_CODING_PLAN_GUIDE](docs/ALI_CODING_PLAN_GUIDE.md) |
-| **Alt E** 🆓 | DeepSeek-V3.1 / Qwen3-Coder | DeepSeek-R1 / Qwen3-235B | No | No | [MODELSCOPE_GUIDE](docs/MODELSCOPE_GUIDE.md) |
-| **Alt F** | Codex CLI (GPT-5.5) | Codex `spawn_agent` (GPT-5.5) | No | Yes | [skills-codex/](skills/skills-codex/) |
-| **Alt G** 🆕 | Codex CLI | Claude Code CLI (`claude-review` MCP) | No* | No* | [CODEX_CLAUDE_REVIEW_GUIDE](docs/CODEX_CLAUDE_REVIEW_GUIDE.md) |
-| **Alt H** 🆕 | Antigravity (Claude Opus 4.6 / Gemini 3.1 Pro) | GPT-5.5 (Codex MCP) or any via llm-chat | No | Optional | [ANTIGRAVITY_ADAPTATION](docs/ANTIGRAVITY_ADAPTATION.md) |
-| **Alt I** 🆕 | Codex CLI | Gemini direct API (`gemini-review` MCP) | No | No | [CODEX_GEMINI_REVIEW_GUIDE](docs/CODEX_GEMINI_REVIEW_GUIDE.md) |
+| **Default** ⭐ | Claude Opus/Sonnet | GPT-5.6-Sol (Codex MCP) | Yes | Yes | [Quick Start](#quick-start) |
+| **Alt A** | GLM-5 (Z.ai) | GPT-5.6-Sol (Codex MCP) | No | Yes | [Setup below](#alt-a-glm--gpt) |
+| **Alt B** | GLM-5 (Z.ai) | MiniMax-M3 | No | No | [MINIMAX_MCP_GUIDE](MINIMAX_MCP_GUIDE.md) |
+| **Alt C** | Any CC-compatible | Any OpenAI-compatible | No | No | [LLM_API_MIX_MATCH_GUIDE](LLM_API_MIX_MATCH_GUIDE.md) |
+| **Alt C.1** | Claude / any CC-compatible | OpenRouter pinned model via `llm-chat` | Optional | No | [OPENROUTER_GUIDE](OPENROUTER_GUIDE.md) |
+| **Alt D** | Kimi-K2.5 / Qwen3.5+ | GLM-5 / MiniMax-M3 | No | No | [ALI_CODING_PLAN_GUIDE](ALI_CODING_PLAN_GUIDE.md) |
+| **Alt E** 🆓 | DeepSeek-V3.1 / Qwen3-Coder | DeepSeek-R1 / Qwen3-235B | No | No | [MODELSCOPE_GUIDE](MODELSCOPE_GUIDE.md) |
+| **Alt F** | Codex CLI (GPT-5.6-Sol) | Codex `spawn_agent` (GPT-5.6-Sol) | No | Yes | [skills-codex/](../skills/skills-codex/) |
+| **Alt G** 🆕 | Codex CLI | Claude Code CLI (`claude-review` MCP) | No* | No* | [CODEX_CLAUDE_REVIEW_GUIDE](CODEX_CLAUDE_REVIEW_GUIDE.md) |
+| **Alt H** 🆕 | Antigravity (Claude Opus 4.6 / Gemini 3.1 Pro) | GPT-5.6-Sol (Codex MCP) or any via llm-chat | No | Optional | [ANTIGRAVITY_ADAPTATION](ANTIGRAVITY_ADAPTATION.md) |
+| **Alt I** 🆕 | Codex CLI | Gemini direct API (`gemini-review` MCP) | No | No | [CODEX_GEMINI_REVIEW_GUIDE](CODEX_GEMINI_REVIEW_GUIDE.md) |
 
 </details>
 
 **How to choose:**
 
 - **Default** — you have Claude + OpenAI access and want the most tested route.
-- **Alt A** — only swap Claude for GLM, keep GPT-5.5 as reviewer via Codex MCP.
+- **Alt A** — only swap Claude for GLM, keep GPT-5.6-Sol as reviewer via Codex MCP.
 - **Alt B** or **Alt E** — no Claude API, no OpenAI API (Alt E is free via ModelScope).
 - **Alt C** or **Alt D** — OpenAI-compatible mix-and-match (Alt D = one Alibaba key for both sides).
-- **Alt C.1** — [OpenRouter](docs/OPENROUTER_GUIDE.md) as an opt-in `llm-chat` reviewer backend: one key, many models; pin a concrete reviewer model and keep it in a different family from the executor.
+- **Alt C.1** — [OpenRouter](OPENROUTER_GUIDE.md) as an opt-in `llm-chat` reviewer backend: one key, many models; pin a concrete reviewer model and keep it in a different family from the executor.
 - **Alt G** or **Alt I** — Codex stays as executor, only the reviewer changes (Claude or Gemini).
-- **Alt H** — Antigravity as the executor (Claude Opus 4.6 or Gemini 3.1 Pro), GPT-5.5 or any `llm-chat` reviewer.
+- **Alt H** — Antigravity as the executor (Claude Opus 4.6 or Gemini 3.1 Pro), GPT-5.6-Sol or any `llm-chat` reviewer.
 
 \* Alt G normally relies on local Codex CLI and Claude Code CLI logins. Direct API keys are optional, not required.
 
 <details>
 <summary><b>Show detailed provider notes for Alt C/D/E/G/H/I</b></summary>
 
-**Alt C** supports tested providers: GLM (Z.ai), Kimi (Moonshot), LongCat (Meituan) as executors; DeepSeek, MiniMax as reviewers. Any OpenAI-compatible API should also work via the generic [`llm-chat`](mcp-servers/llm-chat/) MCP server.
+**Alt C** supports tested providers: GLM (Z.ai), Kimi (Moonshot), LongCat (Meituan) as executors; DeepSeek, MiniMax as reviewers. Any OpenAI-compatible API should also work via the generic [`llm-chat`](../mcp-servers/llm-chat/) MCP server.
 
 **Alt D** uses [Alibaba Coding Plan](https://bailian.console.aliyun.com/) — one API key for both executor and reviewer, 4 models included (Kimi, Qwen, GLM, MiniMax).
 
@@ -60,7 +60,7 @@ Beyond the default Claude × GPT-5.5 route, ARIS ships **10 alternative routes (
 
 ### 12.1 Alt A: GLM + GPT
 
-Only replace the executor (Claude → GLM via Z.ai), keep GPT-5.5 as reviewer via Codex MCP. Codex CLI reuses your existing `OPENAI_API_KEY` (from `~/.codex/config.toml` or environment); no extra reviewer-side config.
+Only replace the executor (Claude → GLM via Z.ai), keep GPT-5.6-Sol as reviewer via Codex MCP. Codex CLI reuses your existing `OPENAI_API_KEY` (from `~/.codex/config.toml` or environment); no extra reviewer-side config.
 
 <details>
 <summary><b>Show Alt A setup commands and <code>~/.claude/settings.json</code></b></summary>
@@ -68,7 +68,7 @@ Only replace the executor (Claude → GLM via Z.ai), keep GPT-5.5 as reviewer vi
 ```bash
 npm install -g @anthropic-ai/claude-code
 npm install -g @openai/codex
-codex setup   # set model to gpt-5.5
+codex setup   # set model to gpt-5.6-sol
 ```
 
 Configure `~/.claude/settings.json`:
@@ -96,11 +96,11 @@ Configure `~/.claude/settings.json`:
 
 ### 12.2 Alt B: GLM + MiniMax
 
-No Claude or OpenAI API needed. Uses a custom MiniMax MCP server instead of Codex (because MiniMax doesn't support OpenAI's Responses API). Full guide: [`docs/MINIMAX_MCP_GUIDE.md`](docs/MINIMAX_MCP_GUIDE.md).
+No Claude or OpenAI API needed. Uses a custom MiniMax MCP server instead of Codex (because MiniMax doesn't support OpenAI's Responses API). Full guide: [`docs/MINIMAX_MCP_GUIDE.md`](MINIMAX_MCP_GUIDE.md).
 
 ### 12.3 Alt C: Any Executor + Any Reviewer
 
-Mix and match freely using the generic `llm-chat` MCP server. Supports any OpenAI-compatible API as reviewer. Full guide: [`docs/LLM_API_MIX_MATCH_GUIDE.md`](docs/LLM_API_MIX_MATCH_GUIDE.md).
+Mix and match freely using the generic `llm-chat` MCP server. Supports any OpenAI-compatible API as reviewer. Full guide: [`docs/LLM_API_MIX_MATCH_GUIDE.md`](LLM_API_MIX_MATCH_GUIDE.md).
 
 Example combinations: GLM + DeepSeek, Kimi + MiniMax, Claude + DeepSeek, LongCat + GLM, etc.
 
@@ -129,6 +129,6 @@ claude
 
 </details>
 
-> ⚠️ **Note:** Alternative models may behave differently from Claude and GPT-5.5. You may need to tune prompt templates for best results. The core cross-model architecture remains the same.
+> ⚠️ **Note:** Alternative models may behave differently from Claude and GPT-5.6-Sol. You may need to tune prompt templates for best results. The core cross-model architecture remains the same.
 
 

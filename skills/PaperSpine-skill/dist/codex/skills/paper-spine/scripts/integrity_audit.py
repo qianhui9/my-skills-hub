@@ -19,6 +19,12 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
+
 from _paper_spine_utils import (
     markdown_tables,
 )
@@ -103,7 +109,7 @@ ARTIFACT_OWNERS: dict[str, str] = {
     "evidence_bank.md": "paper-spine-rewrite / paper-spine-build",
     "rewrite_matrix.md": "paper-spine-rewrite",
     "logic_transfer_audit.md": "paper-spine-rewrite",
-    "material_inventory.md": "paper-spine-build",
+    "source_inventory.md": "paper-spine-build",
 }
 
 ARTIFACT_DESCRIPTIONS: dict[str, str] = {
@@ -127,7 +133,7 @@ def audit_artifacts(out_dir: Path, config: dict) -> AuditDimension:
     if workflow == "rewrite_existing":
         required.extend(["original_logic_map.md", "evidence_bank.md", "rewrite_matrix.md", "logic_transfer_audit.md"])
     else:
-        required.extend(["material_inventory.md"])
+        required.extend(["source_inventory.md"])
 
     for i, artifact in enumerate(required, start=1):
         path = out_dir / artifact
@@ -342,6 +348,79 @@ FAILURE_PATTERN_TEACHING: dict[str, str] = {
 }
 
 
+# High-precision "the manuscript is talking about its own writing/review
+# process" signals. Each pattern encodes the process *relationship* (a mentor or
+# reviewer plus their comments, an earlier draft plus its problems, the paper
+# narrating its own reorganization), NOT a single word — so domain vocabulary
+# like an "AI 导师系统" (tutor system) or a paper about peer review is not flagged,
+# and a legitimate analytical arrow-chain (failure pathway, data flow) is ignored.
+ZH_PROCESS_PATTERNS: list[tuple[str, str]] = [
+    (r"(?:导师|老师|审稿人|评审专家?|审稿专家)[^。\n]{0,12}(?:审阅|意见|批注|反馈|建议)", "names a supervisor/reviewer and their comments"),
+    (r"初稿[^。\n]{0,10}(?:审阅|意见|修改|问题|不足)", "refers to an earlier draft and its problems"),
+    (r"(?:针对|根据|按照|围绕)[^。\n]{0,16}(?:审阅意见|修改意见|审稿意见|导师[^。\n]{0,6}意见)", "frames the paper as a response to review comments"),
+    (r"本文[^。\n]{0,12}(?:重新组织|重新组织为|重组|沿一条主线)", "narrates reorganizing the paper itself"),
+    (r"(?:针对|根据|按照)[^。\n]{0,16}(?:意见|建议|反馈)[^。\n]{0,10}(?:重写|重新组织|重组|调整结构|重新撰写)", "narrates rewriting in response to feedback"),
+]
+EN_PROCESS_PATTERNS: list[tuple[str, str]] = [
+    (r"(?i)\b(?:supervisor|advisor|reviewer)s?['’]?s?\s+(?:comment|feedback|suggestion|note|review|critique)", "names a supervisor/reviewer and their comments"),
+    (r"(?i)\b(?:earlier|previous|prior|first|initial)\s+(?:draft|version)\s+(?:of (?:the|this) (?:paper|manuscript)|lacked|had|was|did not)", "refers to an earlier draft and its problems"),
+    (r"(?i)\b(?:reorganiz|restructur)(?:e|ed|ing)\s+(?:the|this)\s+(?:paper|manuscript|introduction|draft|section)", "narrates reorganizing the manuscript itself"),
+    (r"(?i)\bin response to (?:the )?(?:supervisor|advisor|reviewer|feedback|comment)", "frames the paper as a response to feedback"),
+]
+
+
+def _manuscript_body(out_dir: Path) -> str:
+    final_paper = out_dir / "final_paper"
+    text = ""
+    if final_paper.is_dir():
+        for tex_file in sorted(final_paper.glob("*.tex")):
+            text += tex_file.read_text(encoding="utf-8", errors="ignore") + "\n"
+    # Cut the reference list so bibliography entry titles never trip the scan.
+    cut = re.search(r"\\begin\{thebibliography\}|\\bibliography\b", text)
+    return text[: cut.start()] if cut else text
+
+
+def audit_process_language(out_dir: Path, _config: dict) -> AuditDimension:
+    dim = AuditDimension("Process-Language Leak")
+    body = _manuscript_body(out_dir)
+    if not body.strip():
+        return dim  # Stage 7 (pre-LaTeX): no manuscript yet — nothing to scan.
+
+    hits: list[tuple[str, str]] = []
+    for pattern, label in (*ZH_PROCESS_PATTERNS, *EN_PROCESS_PATTERNS):
+        match = re.search(pattern, body)
+        if match:
+            snippet = re.sub(r"\s+", " ", match.group(0)).strip()
+            hits.append((label, snippet))
+
+    if hits:
+        sample = "; ".join(f"{label} (“{snippet}”)" for label, snippet in hits[:4])
+        dim.findings.append(AuditFinding(
+            id="PRL-001", severity="BLOCKER", dimension=dim.name,
+            what_was_found=f"Manuscript body contains writing-process / meta-narrative language: {sample}",
+            root_cause="Planning scaffolding leaked into the manuscript. section_blueprints.md and "
+                       "writing_rationale_matrix.md legitimately discuss supervisor/reviewer comments and "
+                       "reorganization to PLAN the paper, but that framing must stay internal — here it was "
+                       "transcribed into reader-facing prose instead of being rendered as substantive content.",
+            fix_action="Rewrite the offending sentences to state the scientific content directly. Remove every "
+                       "mention of supervisor/reviewer, review comments, earlier drafts, and any narration of "
+                       "reorganizing the paper. State motivation and contributions as facts about the work, not "
+                       "as a response to feedback.",
+            downstream_impact="A reader or peer reviewer seeing the paper narrate its own revision process reads "
+                              "it as unprofessional; breaking the fourth wall can trigger desk rejection.",
+            teaching_note="The manuscript is for the reader. Planning notation — supervisor comments, "
+                          "close-the-comment justifications, and X→Y→Z throughlines — belongs in the blueprint "
+                          "and rationale matrix, never in the prose. Render the plan as argument; do not transcribe it.",
+        ))
+    else:
+        dim.findings.append(AuditFinding(
+            id="PRL-000", severity="INFO", dimension=dim.name,
+            what_was_found="No writing-process or meta-narrative language found in the manuscript body",
+            root_cause="", fix_action="", downstream_impact="", teaching_note="",
+        ))
+    return dim
+
+
 def audit_integrity_patterns(out_dir: Path, _config: dict) -> AuditDimension:
     dim = AuditDimension("Integrity Patterns")
     manuscript_text = ""
@@ -367,7 +446,13 @@ def audit_integrity_patterns(out_dir: Path, _config: dict) -> AuditDimension:
     if bib_paths:
         bib_text = "\n".join(p.read_text(encoding="utf-8", errors="ignore") for p in bib_paths)
         bib_keys = set(re.findall(r"@\w+\{([^,]+)", bib_text))
-        orphans = [k for k in CITATION_RE.findall(manuscript_text) if k not in bib_keys]
+        # A single \cite{a,b,c} groups several keys; split on commas before
+        # comparing, or the whole "a,b,c" string is a false orphan.
+        cited_keys: list[str] = []
+        for group in CITATION_RE.findall(manuscript_text):
+            cited_keys.extend(key.strip() for key in group.split(",") if key.strip())
+        seen: set[str] = set()
+        orphans = [k for k in cited_keys if k not in bib_keys and not (k in seen or seen.add(k))]
         if orphans:
             counter += 1
             dim.findings.append(AuditFinding(
@@ -515,6 +600,7 @@ def main() -> int:
         audit_reasoning_depth(out_dir, config),
         audit_evidence_chain(out_dir, config),
         audit_integrity_patterns(out_dir, config),
+        audit_process_language(out_dir, config),
     ]
     report = IntegrityAuditReport(str(out_dir), dimensions)
 

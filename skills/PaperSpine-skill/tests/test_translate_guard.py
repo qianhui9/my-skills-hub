@@ -100,6 +100,36 @@ class TranslateGuardTests(unittest.TestCase):
         findings = check_full_paper_coverage(trans, out)
         self.assertTrue(any(f.severity == "BLOCKER" for f in findings))
 
+    def test_check_full_paper_chinese_translation_not_blocked(self) -> None:
+        # Regression: a complete natural Chinese translation matched none of the
+        # English section keywords and was wrongly BLOCKED as missing every section.
+        para = (
+            "本文提出一种基于轨迹对齐的高效扩散模型知识蒸馏方法，"
+            "通过在对齐的时间步上让学生模型匹配教师模型的采样轨迹，"
+            "在显著降低参数量的同时保持生成质量并加快推理速度。"
+        ) * 8
+        zh = "\n\n".join([
+            "# 基于轨迹对齐的高效扩散模型知识蒸馏",
+            "## 摘要", para,
+            "## 引言", para,
+            "## 方法", para,
+            "## 实验", para,
+            "## 结果", para,
+            "## 讨论", "本节讨论方法的局限与不足。" + para,
+            "## 结论", para,
+            "## 致谢", "感谢相关基金资助。",
+            "## 附录", "图 1：整体架构示意（图注）。表 1：主要实验结果。",
+        ])
+        out, trans = _make_fixture(**{
+            "paper_spine_config.json": '{"workflow": "rewrite_existing"}',
+            "translation_zh/full_paper_translation.zh.md": zh,
+        })
+        findings = check_full_paper_coverage(trans, out)
+        self.assertFalse(
+            any(f.severity == "BLOCKER" for f in findings),
+            [f"{f.id}:{f.what}" for f in findings],
+        )
+
     def test_check_manifest_missing(self) -> None:
         out, trans = _make_fixture(**{"paper_spine_config.json": '{"workflow": "rewrite_existing"}'})
         findings = check_manifest(trans, {"workflow": "rewrite_existing"})

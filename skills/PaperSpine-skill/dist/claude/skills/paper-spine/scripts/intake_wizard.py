@@ -248,7 +248,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--tier", choices=TIERS)
     parser.add_argument("--output-language", choices=LANGUAGES)
     parser.add_argument("--ui-language", choices=UI_LANGUAGES)
-    parser.add_argument("--word-output", choices=WORD_OUTPUTS, default="none")
+    parser.add_argument("--word-output", choices=WORD_OUTPUTS, default="docx")
     parser.add_argument("--translation-package", choices=TRANSLATION_PACKAGES, default="none")
     parser.add_argument("--target-name", default="")
     parser.add_argument("--materials-dir", default="")
