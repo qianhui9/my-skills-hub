@@ -156,6 +156,9 @@ contract is what gets graded.)
    `CONTRACT_ACCEPTED: no` plus numbered revision demands. A reply with a
    missing or malformed verdict line is treated as `no`; request a corrected
    verdict as a follow-up — the correction exchange does not consume a round.
+   Include the scope-limits block from
+   [`review-scope-limits.md`](../shared-references/review-scope-limits.md) in the
+   brief.
 
 3. **Iterate.** On `no`, revise per the demands and resubmit as a follow-up in
    the SAME reviewer thread (the negotiation is one conversation). **Max 3
@@ -254,6 +257,17 @@ These are complementary, not mutually exclusive: you can run multiple generators
 [If manual figures needed]: Please add them to figures/ before I proceed.
 [If all auto]: Shall I proceed with LaTeX writing?
 ```
+
+> **Writing invariant (every drafting and revision step):** calibrate each
+> claim to its evidence and state it directly; generic caveats live in the
+> Limitations section only; writing instructions are never manuscript content
+> ("do not mention X" means omit X, not "we do not address X"); tone edits
+> never change what the paper knows; the paper is a launch, not a progress
+> report — organize around the strongest advantage, give every experiment an
+> argumentative duty, keep unfavorable numbers in the tables and explain them
+> as tradeoffs only where the evidence supports that, never narrating
+> defeats. `/paper-write` carries the full CONFIDENT PROSE, HONEST LIMITS
+> contract.
 
 ### Phase 3: LaTeX Writing
 
@@ -368,13 +382,15 @@ Invoke `/auto-paper-improvement-loop` to polish the paper:
 
 **Round 1:** GPT-5.6-Sol xhigh reviews the full paper → identifies CRITICAL/MAJOR/MINOR issues → Claude Code implements fixes → recompile → save `main_round1.pdf`
 
-**Round 2:** GPT-5.6-Sol xhigh re-reviews with conversation context → identifies remaining issues → Claude Code implements fixes → recompile → save `main_round2.pdf`
+**Round 2:** GPT-5.6-Sol xhigh re-reviews the recompiled draft cold (fresh review — no fix summaries, no conversation carry-over) → identifies remaining issues → Claude Code implements fixes → recompile → save `main_round2.pdf`
 
-**Typical improvements:**
+**Typical improvements (calibration cuts both ways):**
 - Fix assumption-model mismatches
-- Soften overclaims to match evidence
+- Narrow genuine overclaims to the supported scope — and state supported claims
+  directly, removing redundant hedges
+- Consolidate scattered generic caveats into Limitations
 - Add missing interpretations and notation
-- Strengthen limitations section
+- Make Limitations more specific (only when a material limit is missing — never pad)
 - Add theory-aligned experiments if needed
 
 **Output:** Three PDFs for comparison + `PAPER_IMPROVEMENT_LOG.md`.

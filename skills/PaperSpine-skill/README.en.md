@@ -1,10 +1,20 @@
+<p align="center">
+  <img src="website/assets/brand/paperspine-mark.svg" width="112" alt="PaperSpine Ridge Seal logo">
+</p>
+
 # PaperSpine
 
 [English](README.en.md) | [中文](README.md)
 
 [**PaperSpine 使用讲解视频（Bilibili）**](https://www.bilibili.com/video/BV1rjVa6ZEYu)
 
-[**🌍 Stargazer Atlas · see which universities and cities use PaperSpine**](https://wubing2023.github.io/PaperSpine/)
+[**🌍 Community Stargazer Atlas · a public GitHub community signal**](https://wubing2023.github.io/PaperSpine/)
+
+## PaperSpine5 release candidate
+
+PaperSpine5 `0.3.0-rc.1` adds a five-stage, local-first research production workspace while preserving this repository's established V4 install and update identity. Start with the [English release page](https://wubing2023.github.io/PaperSpine/v5/en/): give the complete zero-to-install instruction to an AI, or choose the Codex, Claude Code, or DSH host package. The [GitHub prerelease](https://github.com/WUBING2023/PaperSpine/releases/tag/v0.3.0-rc.1) carries four byte-immutable ZIPs, SHA-256 checksums, a manifest, and validation evidence.
+
+V5 is an explicit opt-in RC and does not replace V4's `dist/paperspine_version.json` update source. Update checks are disabled by default, and publishing the software never authorizes an external manuscript submission. See [`RELEASE-NOTES-v0.3.0-rc.1.md`](RELEASE-NOTES-v0.3.0-rc.1.md) and [`ROLLBACK.md`](ROLLBACK.md) for the exact scope, limitations, and rollback policy.
 
 
 > PaperSpine is a contribution-first, reviewer-aware academic writing system for four hosts: Claude Code, Codex, OpenClaw, and Hermes CLI.
@@ -323,3 +333,8 @@ python src/scripts/paperspine_update.py --check-only
 ## License
 
 MIT License. See [LICENSE](LICENSE).
+
+## Contributors
+
+- [Wubin2023](https://github.com/WUBING2023) — Creator, core contributor, and maintainer of PaperSpine across V1–V4, leading its design, development, and continued evolution.
+- [ZHOUYUNCHEN](https://github.com/ZHOUYUNCHEN) — Early V4 collaborator.

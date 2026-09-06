@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import ast
+import json
 import re
 import shutil
 from pathlib import Path
@@ -27,6 +28,32 @@ TARGET_SKILLS = [
 FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---\n?", re.DOTALL)
 SPAWN_BLOCK_RE = re.compile(r"```(?:yaml|text)?\nspawn_agent:\n([\s\S]*?)```")
 SEND_BLOCK_RE = re.compile(r"```(?:yaml|text)?\nsend_input:\n([\s\S]*?)```")
+REVIEW_CALL_BLOCK_RE = re.compile(
+    r"```(?:yaml|text)?\n(?:mcp__claude-review__review_start:|mcp__claude-review__review_reply_start:)[\s\S]*?```"
+)
+TOOLS_KEY_RE = re.compile(r"^\s{2}tools:", re.MULTILINE)
+
+# The claude-review bridge runs the reviewer with `--tools ""` by default: the
+# executor pastes every piece of evidence into the prompt, so the reviewer needs
+# no filesystem access at all. Some review prompts instead hand the reviewer
+# artifact paths and tell it to open them itself. Those calls have to opt into
+# read-only tools, or the reviewer is told to read files it has no tool to read.
+ARTIFACT_REVIEW_TOOLS = "Read,Grep,Glob"
+ARTIFACT_TOOLS_COMMENT = (
+    "  # the bridge grants the reviewer no tools by default; this prompt passes\n"
+    "  # artifact paths, so it has to ask for read-only access explicitly\n"
+)
+
+# A review block is artifact-grounded when its prompt points the reviewer at a
+# path instead of pasting the evidence inline.
+ARTIFACT_PROMPT_CUES = (
+    "read the files yourself",
+    "read them yourself",
+    "read the diff",
+    "read the raw diff",
+    "verbatim files",
+    "/absolute/path/to/",
+)
 
 OVERRIDE_NOTE = (
     "> Override for Codex users who want **Claude Code**, not a second Codex agent, "
@@ -69,12 +96,21 @@ def extract_field(frontmatter: str, field: str) -> str:
 
 
 def build_frontmatter(name: str, description: str) -> str:
-    safe_desc = description.replace('"', '\\"')
-    return f'---\nname: "{name}"\ndescription: "{safe_desc}"\n---\n\n'
+    # JSON strings are a valid subset of YAML double-quoted scalars. Using a
+    # serializer here keeps backslashes and quotes from being escaped twice.
+    return (
+        f'---\nname: {json.dumps(name, ensure_ascii=False)}\n'
+        f'description: {json.dumps(description, ensure_ascii=False)}\n'
+        '---\n\n'
+    )
 
 
 def normalize_description(text: str) -> str:
     text = text or "Claude-review override for a Codex-native ARIS skill."
+    # A few legacy Codex-mirror descriptions contain an extra escape layer
+    # (the parsed value is `\\\"` instead of `\"`). Remove that layer before
+    # serializing the Claude overlay so regeneration stays idempotent.
+    text = text.replace('\\\"', '"')
     text = text.replace("GPT using a secondary Codex agent", "Claude via claude-review MCP")
     text = text.replace("using a secondary Codex agent", "using Claude Code via claude-review MCP")
     text = text.replace("via GPT-5.6-Sol xhigh review", "via Claude review through claude-review MCP")
@@ -147,11 +183,30 @@ def append_async_notes(text: str) -> str:
             return block
         return f"{block}\n\n{note}"
 
-    return re.sub(
-        r"```(?:yaml|text)?\n(?:mcp__claude-review__review_start:|mcp__claude-review__review_reply_start:)[\s\S]*?```",
-        repl,
-        text,
-    )
+    return REVIEW_CALL_BLOCK_RE.sub(repl, text)
+
+
+def is_artifact_grounded(block: str) -> bool:
+    lowered = block.lower()
+    return any(cue in lowered for cue in ARTIFACT_PROMPT_CUES)
+
+
+def add_artifact_review_tools(text: str) -> str:
+    """Opt artifact-grounded review calls into read-only reviewer tools.
+
+    Prompt-only blocks are left alone so the bridge default (`--tools ""`)
+    keeps covering them.
+    """
+
+    def repl(match: re.Match[str]) -> str:
+        block = match.group(0)
+        if TOOLS_KEY_RE.search(block) or not is_artifact_grounded(block):
+            return block
+        header_end = block.index("\n", block.index("mcp__claude-review__review_")) + 1
+        opt_in = f'{ARTIFACT_TOOLS_COMMENT}  tools: "{ARTIFACT_REVIEW_TOOLS}"\n'
+        return f"{block[:header_end]}{opt_in}{block[header_end:]}"
+
+    return REVIEW_CALL_BLOCK_RE.sub(repl, text)
 
 
 def transform_body(text: str) -> str:
@@ -163,6 +218,12 @@ def transform_body(text: str) -> str:
         text,
         count=1,
     )
+    # The acquittal receipt example is a literal the overlay would copy verbatim.
+    # This pack's backend is claude-review, so leaving the source's "codex" in it
+    # makes every overlay run write a false receipt.
+    text = text.replace('"backend":"codex","effort":"xhigh"', '"backend":"claude-review","effort":"high-rigor"')
+    text = text.replace('"backend": "codex", "effort": "xhigh"', '"backend": "claude-review", "effort": "high-rigor"')
+    text = text.replace('"backend":"codex"', '"backend":"claude-review"')
     text = text.replace("secondary Codex agent", "Claude reviewer via `claude-review` MCP")
     text = text.replace("via a Claude reviewer via `claude-review` MCP (xhigh reasoning)", "via `claude-review` MCP (high-rigor review)")
     text = text.replace("secondary Codex agent (xhigh reasoning)", "Claude reviewer via `claude-review` MCP")
@@ -247,7 +308,18 @@ def transform_body(text: str) -> str:
     text = text.replace("agent id", "completed threadId")
     text = text.replace("agent ID", "completed threadId")
     text = text.replace("same agent", "same completed threadId")
-    return append_async_notes(text)
+    # A Read/Grep/Glob reviewer can open a saved diff file but cannot run
+    # `git diff`; the codex mirror's wording offers the range as an option.
+    text = text.replace(
+        "- Changed since last round: <changed-file paths> — read the diff, not my description",
+        "- Changed since last round: <changed-file paths>, plus the saved diff "
+        "(`git diff > changes.patch`): <path> — read the diff, not my description",
+    )
+    text = text.replace(
+        "- Raw diff: <path, or the `git diff` range>",
+        "- Raw diff: <path to a saved diff file — you can read files but cannot run `git diff`>",
+    )
+    return append_async_notes(add_artifact_review_tools(text))
 
 
 def generate_one(skill_name: str) -> None:
