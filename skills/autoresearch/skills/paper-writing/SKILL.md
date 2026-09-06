@@ -215,6 +215,30 @@ contract is what gets graded.)
        satisfy — flag now, not after writing. End with exactly one line:
        CONTRACT_ACCEPTED: yes    or    CONTRACT_ACCEPTED: no
        followed by your numbered revision demands if no.
+
+       === SCOPE LIMITS (these bound what you PROPOSE, never what you look for) ===
+       Report anything that is actually wrong here — including a rare-looking case, if
+       this repo actually produces it. Then keep the fix in scope:
+       1. This is a RESEARCH-WORKFLOW tool, not a security paper. Verification is
+          welcome; over-defense is not. Assume a cooperating operator on their own
+          machine — a malicious local user is NOT in the threat model.
+       2. Do NOT propose SHA / hash / content-fingerprint / digest-binding schemes.
+          Reporting a real defect in hashing code that already exists is fine.
+       3. NO speculative machinery: do not add feature flags, migration frameworks,
+          compat layers, wrappers, pins, or similar mechanisms unless evidence shows
+          a current repo defect they fix or an explicit existing invariant they must
+          preserve. "Load-bearing", "compatibility", and "not scaffolding" are labels,
+          not evidence. Point to the failing path/artifact or invariant, and check the
+          proposal's factual premises, such as whether a named package version exists.
+       4. NO corner-case obsession: exotic encodings, symlink races, RTL text and
+          millisecond races are out of scope unless you can show the case arises here.
+       5. Where a rubric or checklist is genuinely needed, do not over-mechanize
+          judgement. A clear sentence a human reads beats a scored table nobody
+          maintains.
+       Exception: code that runs remote commands, starts a network service, or installs
+       an MCP server runs on the user's machine with their credentials — trust-boundary
+       findings there are in scope and the default is strict.
+       Say plainly when something is correct. Do not manufacture findings.
    ```
 
    A reply with a missing or malformed `CONTRACT_ACCEPTED:` line is treated as
@@ -335,6 +359,17 @@ These are complementary, not mutually exclusive: you can run multiple generators
 [If all auto]: Shall I proceed with LaTeX writing?
 ```
 
+> **Writing invariant (every drafting and revision step):** calibrate each
+> claim to its evidence and state it directly; generic caveats live in the
+> Limitations section only; writing instructions are never manuscript content
+> ("do not mention X" means omit X, not "we do not address X"); tone edits
+> never change what the paper knows; the paper is a launch, not a progress
+> report — organize around the strongest advantage, give every experiment an
+> argumentative duty, keep unfavorable numbers in the tables and explain them
+> as tradeoffs only where the evidence supports that, never narrating
+> defeats. `/paper-write` carries the full CONFIDENT PROSE, HONEST LIMITS
+> contract.
+
 ### Phase 3: LaTeX Writing
 
 Invoke `/paper-write` to generate section-by-section LaTeX:
@@ -452,13 +487,15 @@ If `— style-ref: <source>` was passed in `$ARGUMENTS` and the helper succeeded
 
 **Round 1:** GPT-5.6-Sol xhigh reviews the full paper → identifies CRITICAL/MAJOR/MINOR issues → Claude Code implements fixes → recompile → save `main_round1.pdf`
 
-**Round 2:** GPT-5.6-Sol xhigh re-reviews with conversation context → identifies remaining issues → Claude Code implements fixes → recompile → save `main_round2.pdf`
+**Round 2:** GPT-5.6-Sol xhigh re-reviews the recompiled draft cold (fresh review — no fix summaries, no conversation carry-over) → identifies remaining issues → Claude Code implements fixes → recompile → save `main_round2.pdf`
 
-**Typical improvements:**
+**Typical improvements (calibration cuts both ways):**
 - Fix assumption-model mismatches
-- Soften overclaims to match evidence
+- Narrow genuine overclaims to the supported scope — and state supported claims
+  directly, removing redundant hedges
+- Consolidate scattered generic caveats into Limitations
 - Add missing interpretations and notation
-- Strengthen limitations section
+- Make Limitations more specific (only when a material limit is missing — never pad)
 - Add theory-aligned experiments if needed
 
 **Output:** Three PDFs for comparison + `PAPER_IMPROVEMENT_LOG.md`.
@@ -591,11 +628,18 @@ not silently skip the default-ON gate):
   citations → `/citation-audit`; proof → `/proof-checker`; scope/baseline/
   eval-design → `/auto-review-loop` as reviewer input, or the human.
 - Close obligations ONLY via `forensics_gate.py resolve` (typed, hashed
-  evidence) or a human `waive`. **Never edit the paper with the objective
-  "make the sweep stop flagging"** — a vanished-but-unresolved finding keeps
-  the gate closed (`UNRESOLVED_DISAPPEARANCE`).
+  evidence) or a human `waive`. Since 2026-08 upstream reports every proposal an
+  auditor made rather than deciding which ones do not count, so expect more
+  obligations and expect some to be proposals you judge wrong — `waive` with a
+  reason is the normal disposition for those, not a last resort. **Never edit the
+  paper with the objective "make the sweep stop flagging"** — a
+  vanished-but-unresolved finding keeps the gate closed
+  (`UNRESOLVED_DISAPPEARANCE`).
 - `WARN` (SOFT_FLAGS / open non-critical obligations): proceed, but the Final
-  Report must list them under `Forensics`.
+  Report must list them under `Forensics` — including the dimensions the sweep
+  never ran, which `evaluate` and `fresh` both print. A WARN can sit on top of an
+  incomplete sweep: upstream folds incompleteness into the verdict only when it
+  would otherwise read clean.
 - Zero-weight AIS style impressions: FYI only — may feed
   `/auto-paper-improvement-loop` context, never gate.
 

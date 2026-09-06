@@ -8,20 +8,30 @@
 
 [![技术报告](https://img.shields.io/badge/技术报告-arXiv%3A2605.03042-b31b1b?style=flat&logo=arxiv)](https://huggingface.co/papers/2605.03042) · [![ARIS 介绍 (HTML)](https://img.shields.io/badge/ARIS%20介绍-HTML%20%C2%B7%20由%20%2Frender--html%20生成-1a4a8c?style=flat&logo=html5&logoColor=white)](https://wanshuiyin.github.io/Auto-claude-code-research-in-sleep/ARIS_INTRO.html) · [![ARIS 介绍幻灯 — VALSE 2026](https://img.shields.io/badge/VALSE%202026%20幻灯-PDF%20%C2%B7%20由%20%2Fpaper--talk%20生成-EC1C24?style=flat&logo=adobeacrobatreader&logoColor=white)](docs/aris_intro_slides.pdf) · [![AI Agents 指南](https://img.shields.io/badge/AI%20Agents-AGENT__GUIDE.md-4B2E83?style=flat&logo=readthedocs&logoColor=white)](AGENT_GUIDE.md) · [![PaperWeekly 收录](https://img.shields.io/badge/PaperWeekly-收录-red?style=flat)](https://mp.weixin.qq.com/s/tDniVryVGjDkkkWl-5sTkQ) · [![Featured in awesome-agent-skills](https://img.shields.io/badge/Featured%20in-awesome--agent--skills-blue?style=flat&logo=github)](https://github.com/VoltAgent/awesome-agent-skills) · [![AI Digital Crew - Project of the Day](https://img.shields.io/badge/AI%20Digital%20Crew-Project%20of%20the%20Day%20(2026.03.14)-orange?style=flat)](https://aidigitalcrew.com) · [![GitHub 星标](https://img.shields.io/github/stars/wanshuiyin/Auto-claude-code-research-in-sleep?style=flat&logo=github&logoColor=white&color=gold&label=Stars)](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/stargazers) · [💬 加入交流群](#community) · [![引用](https://img.shields.io/badge/📖_引用-BibTeX-green?style=flat)](#citation)
 
-💡 *在 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) / [Codex CLI](skills/skills-codex/) / [Cursor](docs/CURSOR_ADAPTATION.md) / [Trae](docs/TRAE_ARIS_RUNBOOK_CN.md) / [Antigravity](docs/ANTIGRAVITY_ADAPTATION_CN.md) / [GitHub Copilot CLI](docs/COPILOT_CLI_ADAPTATION.md) / [OpenClaw](docs/OPENCLAW_ADAPTATION.md) 里以 skill-based workflow 用 ARIS，或用独立的 **[ARIS-Code](docs/ARIS-Code-README_CN.md)** CLI 完整版体验——任你选！*
+💡 *在 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) / [Codex CLI](skills/skills-codex/) / [Cursor](docs/CURSOR_ADAPTATION.md) / [Trae](docs/TRAE_ARIS_RUNBOOK_CN.md) / [Antigravity](docs/ANTIGRAVITY_ADAPTATION_CN.md) / [GitHub Copilot CLI](docs/COPILOT_CLI_ADAPTATION.md) / [OpenClaw](docs/OPENCLAW_ADAPTATION.md) / [DeepSeek Harness](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/blob/dsh-aris/README_CN.md) 里以 skill-based workflow 用 ARIS，或用独立的 **[ARIS-Code](docs/ARIS-Code-README_CN.md)** CLI 完整版体验——任你选！*
+
+🐋 **在 DeepSeek Harness 上，ARIS 是一个插件：** `dsh plugin --profile web add dsh-aris`（命令自己从 npm 拉包，无需先装什么——但 `pnpm` 必须在 `PATH` 里）—— 82 个技能零改动，审稿人仍是 Codex。安装与限制见 [`dsh-aris` 分支](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/blob/dsh-aris/README_CN.md)。
 
 🌱 *ARIS 是方法论，不是平台。重要的是科研工作流——带着它去任何地方。*
 
 🤖 **AI agent 兄弟们：** 直接读 [`AGENT_GUIDE.md`](AGENT_GUIDE.md) —— 给 LLM 消费的路由 index，不是给人浏览的。
 
+🧱 **ARIS 的审阅器确实好用 —— 但它也提议过"加个没人读的哈希" → [HERO](https://github.com/wanshuiyin/HERO-Anti-OverDefense) 就是治这个的契约。** **H**ashing(哈希)、**E**dge cases(边界情况)、**R**ubrics(把判断换成机械)、**O**verbuild(过度建设)——agent 过度防御的四种形状,压成一段约 550 token、粘进 `CLAUDE.md` / `AGENTS.md` 的短文本。
+*它约束的是 agent **提议怎么修**,不是它**能找什么**。*
+
 🎬 **ARIS 走向多模态 → [ARIS-Movie-Director](https://github.com/wanshuiyin/ARIS-Movie-Director)** —— 给它一个粗略的故事,拿回一部按场景检查过的图像电影(参考运行有 19 个场景)。
 长故事最容易坏在两点:模型忘了前面的细节,或者自己给自己打分——所以 ARIS 用 research-wiki 记住上下文,再让别的模型检查每一帧。
+
+<details>
+<summary>🗺️ <b>方法图</b> —— 故事梗概 → 可信源头 → 逐格受审螺旋 → 组装发布,一张图看全</summary>
 
 <p align="center">
   <a href="https://github.com/wanshuiyin/ARIS-Movie-Director">
     <img src="docs/aris-movie-director-method.png" alt="ARIS-Movie-Director 方法图 —— 受审螺旋：可信源头（asset library · outline · storyboard · comic.json）→ 逐格 image_gen + 跨模型 panel_gate（盲 token-diff、单票否决）→ research-wiki 审计留痕 → 组装与发布" width="100%">
   </a>
 </p>
+
+</details>
 
 > 🧭 *同一套流程也能画干净的方法图 / 流程图——上面这张图就是它做出来的。入口在 **[ARIS-Movie-Director](https://github.com/wanshuiyin/ARIS-Movie-Director)**:[`/movie-pipeline`](https://github.com/wanshuiyin/ARIS-Movie-Director/blob/main/skills/movie-pipeline/SKILL.md) 和 [`/method-figure`](https://github.com/wanshuiyin/ARIS-Movie-Director/blob/main/skills/method-figure/SKILL.md),后者就是生成这张图的 skill。*
 
@@ -265,12 +275,26 @@ ARIS 读论文 → 找弱点 → 克隆代码 → 针对*那些*弱点用*那套
 
 ## 2. 📢 最近更新
 
-- **2026-08-03** — ![NEW](https://img.shields.io/badge/NEW-red?style=flat-square) 🧭 **`/proof-orchestrator` —— 工作流 7,独立理论轨道:带记忆的证明战役**([#381](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/pull/381),社区贡献 by [@shenmuxing](https://github.com/shenmuxing),改编自其本人的 [EtaSkill](https://github.com/shenmuxing/EtaSkill))。硬定理很少一轮对话就倒下——这个 skill 把证明工作跑成有状态的 local-first 流水线:冻结精确目标、本地攻坚与审计、过七行记号记分卡(未定义符号与符号冲突必须为零)和自顶向下推导结构门——名为润色实为纠错,循环论证在自顶向下重写那一刻现形;证明卡住时,产出可直接复制粘贴的 GPT Pro 交接包。run 跨 session 延续:每个新 run 记录此前哪些 claim 已证/猜想/已否决,只有审计通过的 claim 才被复用。可按需请求 DeepSeek 对抗性第二意见。工作流 1–6 不会调用它;`/proof-checker` 仍是投稿门。⚠️ 运行 `bash tools/smart_update.sh --apply` 拉取更新。
+> ⚠️ 凡涉及 skill 变更的条目:跑 `bash tools/smart_update.sh --apply` 拉取。
+
+- **2026-09-03** — ![FIX](https://img.shields.io/badge/FIX-2ea44f?style=flat-square) 📣 **论文是发布会,不是工作汇报**(规则采自 [anti-defensive-writing-Skill](https://github.com/Adkid-Zephyr/anti-defensive-writing-Skill),作者 [@Adkid-Zephyr](https://github.com/Adkid-Zephyr),觉得有用就 🌟)。写作契约新增四条:围绕真正的最强优势组织叙事;打不赢的指标不设为比赛;不占优的数字照样留在表里,证据支持时解释为目标差异或权衡,不支持就平实陈述、收窄主张——不写成认输,也不硬编权衡;每个实验必须有论证职责,没有就出主线;摘要引言按问题 → 缺口 → 思路 → 最硬的结果开场,结论不在最后一段突然自我否定。`/auto-paper-improvement-loop` 按同样标准挑毛病。收录在 [Awesome 社区](#awesome-community-skills)。
+- **2026-08-26** — ![FIX](https://img.shields.io/badge/FIX-2ea44f?style=flat-square) 🧯 **两处过度防御残留**([#425](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/pull/425))。`/research-review` 是唯一没带范围约束块的审阅 prompt,现在补上了,简报结尾从光秃秃的"往死里挑"变成"撑得住就明说"——敌意立场一字未动。`/research-pipeline` 不再因为缺 `VENUE` 死在过夜跑里:找 idea、实验、分析、叙事报告都与 venue 无关,照常跑完——只推迟排版,盖章等 resume。它还一边写着 `VENUE = ICLR` 默认值一边禁止静默默认;默认值已删。
+- **2026-08-26** — ![FIX](https://img.shields.io/badge/FIX-2ea44f?style=flat-square) ✍️ **论文不再写成忏悔书**([#423](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/pull/423)、[#424](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/pull/424);多条规则采自 [humanize-paper](https://github.com/SyntaxSmith/humanize-paper))。claim 按证据配得上的力度直说;"further research is needed" 这类通用免责只住 Limitations;"别提 X"就是 X 不存在——绝不写 "we do not address X";结果按论证排序,不按实验先后。
+- **2026-08-26** — ![FIX](https://img.shields.io/badge/FIX-2ea44f?style=flat-square) 💡 **idea 流水线不再因为"有邻居"就杀 idea**([#419](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/pull/419)–[#422](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/pull/422);来自社区反馈)。ABANDON 必须指名那篇已经包含你结果的论文;同期工作是 race,你定,不是 veto。生成用双模型(gpt-5.6-sol + gpt-5.5)取并集,要的是对重要问题的创造性强攻,不是钻角落堆模块。搜索照样往死里查。
+- **2026-08-21** — ![NEW](https://img.shields.io/badge/NEW-red?style=flat-square) 🔌 **Codex 审稿连不上时,可配 HTTP 兜底**([#413](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/pull/413);by [@TheFlashForge](https://github.com/TheFlashForge))。默认关;只在能证明 Codex 根本没收到请求时启用——超时不算,那可能花两份钱买两个打架的结论。兜底读你的原始文件,信任比 Codex 更低,绝不更高。
+- **2026-08-21** — ![FIX](https://img.shields.io/badge/FIX-2ea44f?style=flat-square) 🧹 **一天合并四个社区修复**([#406](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/pull/406)–[#410](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/pull/410);by [@ZLZLGe](https://github.com/ZLZLGe) 和 [@JasmineLCY](https://github.com/JasmineLCY))。`AUTO_PROCEED=true` 真的自己往下走了;idea-discovery 的门要见真审稿回执,不认打勾;缓存的 wiki 上下文读之前先扫描;选 Claude 当审稿人的 Codex 用户找回三个论文 skill。
+<details>
+<summary>更早的更新(2026-03-12 — 2026-08-09,77 条)</summary>
+
+- **2026-08-09** — ![NEW](https://img.shields.io/badge/NEW-red?style=flat-square) 🦆 **Copilot CLI 宿主下 `/auto-review-loop` 默认用原生 rubber-duck 审稿**([#360](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/pull/360),closes [#258](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/issues/258))。只在 Copilot CLI 会话里启用;审稿证据从宿主事件复验,同族/不明一律 fail-closed。标准 Claude Code + Codex 搭配不受影响。
+- **2026-08-09** — ![NEW](https://img.shields.io/badge/NEW-red?style=flat-square) 🚧 **`/idea-discovery` 不能再静默跳过阶段**([#383](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/pull/383),closes [#285](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/issues/285);by [@3mom3](https://github.com/3mom3))。五个阶段每个都要有记录在案的证据,否则报告写明 `BLOCKED`,不装完整。
+- **2026-08-05** — ![FIX](https://img.shields.io/badge/FIX-2ea44f?style=flat-square) 🈶 **research wiki 的非 ASCII 修好了**([#386](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/pull/386)、[#387](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/pull/387);由 [@LIMMIL7](https://github.com/LIMMIL7) 报告)。cp936 下写的 wiki 换机器读不了,纯中文标题塌成 `<年份>_untitled` 还被当重复丢掉。已有 UTF-8 wiki 不受影响。
+- **2026-08-04** — ![NEW](https://img.shields.io/badge/NEW-red?style=flat-square) 🖼️ **上游动态:[posterly](https://github.com/Chenruishuo/posterly)——`/paper-poster-html` 的引擎——大幅设计升级**(MIT,by [@Chenruishuo](https://github.com/Chenruishuo);今年 ICML 约 50 张海报出自它)。[GitHub](https://github.com/Chenruishuo/posterly) · [Blog](https://www.tryposterly.com/blog)。
+- **2026-08-03** — ![NEW](https://img.shields.io/badge/NEW-red?style=flat-square) 🧭 **`/proof-orchestrator`——工作流 7:带记忆的证明战役**([#381](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/pull/381);by [@shenmuxing](https://github.com/shenmuxing),改编自其 [EtaSkill](https://github.com/shenmuxing/EtaSkill))。有状态的 local-first 证明 run,跨 session 延续,卡住时产出可直接粘贴的 GPT Pro 交接包。`/proof-checker` 仍是投稿门。
+
 - **2026-07-14** — ![NEW](https://img.shields.io/badge/NEW-red?style=flat-square) 🐞 **[`/web-debug-search`](skills/web-debug-search/SKILL.md)**（Issue [#211](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/issues/211)）。新增聚焦调试/发现的检索流程：搜索 GitHub Issues 与 Discussions，支持精确/归一化错误字符串匹配、版本兼容性追踪和明确的失败处理。所有结果都标记为调试用途，不能作为论文引用证据。
 - **2026-07-14** — ![NEW](https://img.shields.io/badge/NEW-red?style=flat-square) 🧩 **选择性安装 + 全局脚本指针**([#366](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/pull/366))。81 个 skill 不再"一股脑全装"——四套安装器都支持按组/按 skill 选装(`--list-groups` / `--groups X,Y` / `--skills X` / `--exclude Y`,或 TTY 下的全屏勾选界面),pipeline 硬依赖自动带全。更新时上游**新增**的 skill 会逐个确认(`--add-new` / `--skip-new` 供脚本化;拒绝的记住、不再重复问)。同时修了全局 copy 安装(`~/.claude/skills`)找不到 helper 脚本的问题,新增指针文件 `~/.aris/repo`。⚠️ 向后兼容:`--quiet` 全新安装仍是全装;跑一次任意安装器/更新器即可拿到指针文件。[选择性安装 →](#install-skills)
 - **2026-07-12** — ![NEW](https://img.shields.io/badge/NEW-red?style=flat-square) 🛡️ **投稿前,你的论文先过一遍审稿人那侧的取证**([#357](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/pull/357))。新 skill `/integrity-forensics`:SHA-pin 薄启动器,把 [Anti-Autoresearch](https://github.com/wanshuiyin/Anti-Autoresearch) 那套敌意审稿人能跑的扫描(证据账本、九个审计维度、数值核心、纯规则裁决器)先跑在你自己的论文上。结论进一道 typed gate——flag 能拦下投稿,"没查出问题"只记作"无新阻断"、不算无罪判决;finding 只有带类型、带 hash 的证据、或人签字的 waiver 才能销项(把句子改个措辞不算数,台账会记下来)。`/paper-writing` 在 submission 档默认就跑(`— self_forensics: false` 可关;Codex 镜像是 opt-in,且只能跑上游的确定性切片——能报 flag,永远说不出 CLEAN)。⚠️ 首次运行需要联网克隆并校验上游;跑 `bash tools/smart_update.sh --apply` 拉取更新。
-<details>
-<summary>更早的更新(2026-03-12 — 2026-07-10,69 条)</summary>
 
 - **2026-07-10** — ![NEW](https://img.shields.io/badge/NEW-red?style=flat-square) 🧠 **Reviewer 默认换成 GPT-5.6-Sol,深度审计用上新的 `ultra` 档**([#354](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/pull/354))。codex-cli 0.144.1 在 `xhigh` 之上加了 `max`、`ultra`;ARIS 审阅默认走 `gpt-5.6-sol`,七个重量级裁决(`/proof-checker`、`/kill-argument`、`/research-review`、`/experiment-audit`、`/paper-claim-audit`、`/result-to-claim`、`/meta-apply`)用 `ultra`,其余保持 `xhigh`。codex-cli 版本旧或没有这个模型会自动降级(5.6-sol → 5.5,均 `xhigh`)——永远不低于 `xhigh`,单纯超时不降级。顺手修了:`/result-to-claim` 审稿模型连不上时诚实停下,不再自判自己的实验。⚠️ 升级 codex-cli 到 ≥ 0.144.1,重启 session,跑 `bash tools/smart_update.sh --apply`。
 - **2026-07-03** — ![NEW](https://img.shields.io/badge/NEW-red?style=flat-square) 🧬 **从 Anthropic 的 Claude Science skills 借来三点小改动**([#339](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/pull/339)、[#340](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/pull/340)、[#341](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep/pull/341);Apache-2.0)。ARIS 现在用同一种写法描述 GPU 环境,同一份配置可以用在 SSH 机器、Modal 和集群上,再让一个全新的 agent 按安装说明走一遍来检查。我们也加了一个小工具,用来测试 skill 描述到底能不能让系统选中正确的 skill。最后,图表和写作检查会把"事实是否正确"和"风格是否好看"分开:事实必须过,风格只是建议。⚠️ 运行 `bash tools/smart_update.sh --apply` 拉取更新。
@@ -659,7 +683,7 @@ ARIS 全流程完成并进入投稿/审稿阶段的真实项目。**所列分数
 
 🎉 **社区 Skills（13 个）：** [research-refine](skills/research-refine/SKILL.md) · [experiment-plan](skills/experiment-plan/SKILL.md) · [research-refine-pipeline](skills/research-refine-pipeline/SKILL.md) · [grant-proposal](skills/grant-proposal/SKILL.md) · [paper-poster](skills/paper-poster/SKILL.md) (deprecated → [paper-poster-html](skills/paper-poster-html/SKILL.md)) · [paper-slides](skills/paper-slides/SKILL.md) · [mermaid-diagram](skills/mermaid-diagram/SKILL.md) · [proof-writer](skills/proof-writer/SKILL.md) · [comm-lit-review](skills/comm-lit-review/SKILL.md) · [dse-loop](skills/dse-loop/SKILL.md) · [idea-discovery-robot](skills/idea-discovery-robot/SKILL.md) · [paper-illustration](skills/paper-illustration/SKILL.md) · [skills-codex](skills/skills-codex/)
 
-🌐 **外部项目 & 文档（12 个）：** [rosetta](https://github.com/SyntaxSmith/rosetta) · [open-source-hardening-skills](https://github.com/zeyuzhangzyz/open-source-hardening-skills) · [CitationClaw](https://github.com/VisionXLab/CitationClaw) · [auto-hparam-tuning](https://github.com/zxh0916/auto-hparam-tuning) · [paper-to-course](https://github.com/KaguraTart/paper-to-course) · [deep-research-skills](https://github.com/Weizhena/deep-research-skills) · [Antigravity 适配指南](docs/ANTIGRAVITY_ADAPTATION_CN.md) · [OpenClaw 适配指南](docs/OPENCLAW_ADAPTATION.md) · [Cursor 适配指南](docs/CURSOR_ADAPTATION.md) · [Trae 适配指南](docs/TRAE_ARIS_RUNBOOK_CN.md) · [posterly](https://github.com/Chenruishuo/posterly) · [Claude Fleet](https://github.com/tianyilt/claude-fleet)
+🌐 **外部项目 & 文档（13 个）：** [rosetta](https://github.com/SyntaxSmith/rosetta) · [open-source-hardening-skills](https://github.com/zeyuzhangzyz/open-source-hardening-skills) · [CitationClaw](https://github.com/VisionXLab/CitationClaw) · [auto-hparam-tuning](https://github.com/zxh0916/auto-hparam-tuning) · [paper-to-course](https://github.com/KaguraTart/paper-to-course) · [deep-research-skills](https://github.com/Weizhena/deep-research-skills) · [Antigravity 适配指南](docs/ANTIGRAVITY_ADAPTATION_CN.md) · [OpenClaw 适配指南](docs/OPENCLAW_ADAPTATION.md) · [Cursor 适配指南](docs/CURSOR_ADAPTATION.md) · [Trae 适配指南](docs/TRAE_ARIS_RUNBOOK_CN.md) · [posterly](https://github.com/Chenruishuo/posterly) · [Claude Fleet](https://github.com/tianyilt/claude-fleet) · [anti-defensive-writing-Skill](https://github.com/Adkid-Zephyr/anti-defensive-writing-Skill)
 
 > 🙌 感谢每一位贡献者！为了 README 的可读性，下方表格折叠展示——但每个 skill 和项目都同样珍贵。欢迎 PR！
 
@@ -685,11 +709,12 @@ ARIS 全流程完成并进入投稿/审稿阶段的真实项目。**所列分数
 </details>
 
 <details>
-<summary><b>🌐 外部项目 & 文档（12 个）</b> — 点击展开</summary>
+<summary><b>🌐 外部项目 & 文档（13 个）</b> — 点击展开</summary>
 
 | 名称 | 领域 | 描述 |
 |------|------|------|
 | 🪨 [rosetta](https://github.com/SyntaxSmith/rosetta) | Pro 级 ChatGPT MCP | Node 程序化访问 **ChatGPT Pro / `gpt-5.5-pro` / DeepResearch**——通过 Chrome CDP Fetch 拦截 + WebSocket second-leg streaming 实现。自带 MCP server（Claude Code / Codex / Cline），是 Oracle MCP 在 `— reviewer: oracle-pro` 高 tier review 上的另一种实现路径。支持多轮对话、并发、live token deltas、15 分钟 idle-timeout watchdog（长 Pro thinking 不会被误杀）。MIT，by [@SyntaxSmith](https://github.com/SyntaxSmith) |
+| 📣 [anti-defensive-writing-Skill](https://github.com/Adkid-Zephyr/anti-defensive-writing-Skill) | 发布会写作原则 | 「论文是发布会,不是工作汇报」:十二条反防御性写作规则——围绕最强优势组织、只打赢得了的比赛、每个实验都有论证职责、禁用自我削弱表达。Skill(中/英)+ 复制即用提示词。其中四条已并入 ARIS 写作契约。MIT,by [@Adkid-Zephyr](https://github.com/Adkid-Zephyr) |
 | 🛡️ [open-source-hardening-skills](https://github.com/zeyuzhangzyz/open-source-hardening-skills) | DevOps / 开源 | 10 个 skill 流水线，将研究代码加固为生产级开源项目 |
 | 📊 [CitationClaw](https://github.com/VisionXLab/CitationClaw) | 通用 | 引用影响力分析——论文标题 → 引用爬取、学者识别、HTML 报告 |
 | 🚀 [Antigravity 适配指南](docs/ANTIGRAVITY_ADAPTATION_CN.md) | 通用 | 在 [Google Antigravity](https://antigravity.google/) 中使用 ARIS skills——原生 SKILL.md 支持，双模型（Claude Opus 4.6 / Gemini 3.1 Pro），MCP 配置，中[英](docs/ANTIGRAVITY_ADAPTATION.md)文指南 |
@@ -1526,7 +1551,13 @@ Skills 都是纯 Markdown,fork 了随便改。各 skill 的环境变量(GPU 目�
 
 ![GitHub stars](https://img.shields.io/github/stars/wanshuiyin/Auto-claude-code-research-in-sleep?style=social)
 
-[![Star History Chart](https://api.star-history.com/svg?repos=wanshuiyin/Auto-claude-code-research-in-sleep&type=Date&v=20260328)](https://star-history.com/#wanshuiyin/Auto-claude-code-research-in-sleep&Date)
+<a href="https://www.star-history.com/?repos=wanshuiyin%2FAuto-claude-code-research-in-sleep&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=wanshuiyin/Auto-claude-code-research-in-sleep&type=date&theme=dark&legend=top-left&sealed_token=k7GiP-sALgHwi5DeZRCZufnpu4KesUSoNuhjn6qeKlPZ03GyC-EvHB7yFbWOfXmlV2oXduMnFx0zW5-h7m_bKocO3KlfXKrVAAhJQ-au67CkRUp-m3KrRw" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=wanshuiyin/Auto-claude-code-research-in-sleep&type=date&legend=top-left&sealed_token=k7GiP-sALgHwi5DeZRCZufnpu4KesUSoNuhjn6qeKlPZ03GyC-EvHB7yFbWOfXmlV2oXduMnFx0zW5-h7m_bKocO3KlfXKrVAAhJQ-au67CkRUp-m3KrRw" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=wanshuiyin/Auto-claude-code-research-in-sleep&type=date&legend=top-left&sealed_token=k7GiP-sALgHwi5DeZRCZufnpu4KesUSoNuhjn6qeKlPZ03GyC-EvHB7yFbWOfXmlV2oXduMnFx0zW5-h7m_bKocO3KlfXKrVAAhJQ-au67CkRUp-m3KrRw" />
+ </picture>
+</a>
 
 <a id="acknowledgements"></a>
 
