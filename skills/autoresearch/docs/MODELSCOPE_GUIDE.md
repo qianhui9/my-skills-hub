@@ -138,7 +138,7 @@ cp -r skills/* ~/.claude/skills/
 
 ### Step 6：改写所有使用 Codex MCP 的 Skills
 
-项目中有 **12 个 skill** 调用 `mcp__codex__codex`（依赖 OpenAI Responses API，ModelScope 不支持）。在启动 Claude Code 后执行以下指令，让它自动完成改写：
+项目中有 **46 个 skill** 在 frontmatter 里授权了 `mcp__codex__codex`（依赖 OpenAI Responses API，ModelScope 不支持），其中 **28 个**正文里有实际的调用块。在启动 Claude Code 后执行以下指令，让它自动完成改写：
 
 ```
 Read skills/auto-review-loop-llm/SKILL.md as a reference.
@@ -241,7 +241,7 @@ claude
 | | 默认方案 | Coding Plan | **本方案（ModelScope）** | GLM + MiniMax |
 |---|---|---|---|---|
 | 执行器 | Claude Opus/Sonnet | kimi-k2.5 | **DeepSeek-V4-Pro** | GLM-5 (Z.ai) |
-| 审查器 | GPT-5.6-Sol (Codex MCP) | glm-5 | **DeepSeek-R1** | MiniMax-M3 |
+| 审查器 | GPT-6-Astra (Codex MCP) | glm-5 | **DeepSeek-R1** | MiniMax-M3 |
 | 需要 Claude API | 是 | 否 | **否** | 否 |
 | 需要 OpenAI API | 是 | 否 | **否** | 否 |
 | 费用 | 按量 | 套餐付费 | **免费（2000次/天）** | 按量 |

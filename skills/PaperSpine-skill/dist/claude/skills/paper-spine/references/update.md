@@ -1,37 +1,51 @@
-# Update Stage
+# PaperSpine5 V5 update
 
-This file is the canonical stage playbook for the paper-spine orchestrator.
+Use this playbook only for an explicit update/check request. It does not start or
+modify a paper task. V3/V4 `paperspine_update.py` and
+`dist/paperspine_version.json` are legacy component routes, not the V5 release
+channel.
 
-## Purpose
+## Check the current V5 channel
 
-Check for and install PaperSpine updates from GitHub while preserving global
-config.
+The stable public channel is:
 
-## Script
+```text
+https://wubing2023.github.io/PaperSpine/v5/downloads/manifest.json
+```
 
-Windows:
+On Windows, download that JSON and its `release_assets.installer_url` into a new
+temporary directory. Before running the installer, compare its byte count and
+SHA-256 with `release_assets.installer_bytes` and
+`release_assets.installer_sha256`. Stop on any mismatch. Then run:
+
 ```powershell
-$script = Join-Path $env:USERPROFILE ".claude\skills\paper-spine\scripts\paperspine_update.py"
-python $script --yes
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -CheckOnly -ManifestPath .\manifest.json
 ```
 
-macOS / Linux:
-```bash
-python3 ~/.claude/skills/paper-spine/scripts/paperspine_update.py --yes
+The result is one of `not_installed`, `up_to_date`, or `update_available`, based
+on the profile's actual active build ID rather than the older component version.
+Checking does not replace files.
+
+## Apply an explicitly requested update
+
+After a verified `update_available` result, use the same verified installer and
+manifest:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -Target codex -ManifestPath .\manifest.json
 ```
 
-For version check only: `--check-only` instead of `--yes`.
+Use `-Target claude-code` or `-Target both` when requested. An existing V5 profile
+uses the transactional lifecycle `update`; it verifies the suite, retains task
+data, runs REST/MCP readiness and first-start, and requires a new host session.
+Use `-CleanLegacy` only when the user explicitly wants known V3/V4 discovery
+folders archived. Never delete unknown folders, settings, or paper data.
 
-## Behavior
+The self-contained full-suite update is currently Windows x64 only. For another
+platform, update only the standalone Skill using its verified release archive and
+package installer; do not claim full-suite runtime validation.
 
-- Read local install state from `~/.paperspine/install_state.json`.
-- Compare against GitHub `main` manifest.
-- Update Codex, Claude Code, and OpenClaw by default.
-- Preserve `~/.paperspine/config.json`.
-- Never touch project artifacts.
-- If network fails, report the error; do not delete local skills.
-
-## Advanced
-
-- `--target codex|claude|openclaw` for single-host update.
-- `--repo-archive <path>` for local/offline update.
+Compatibility note: the installed legacy component helper remains at
+`paper-spine\scripts\paperspine_update.py` on Windows and
+`paper-spine/scripts/paperspine_update.py` on POSIX. Do not use it as the V5
+release authority; the verified manifest/installer route above supersedes it.
