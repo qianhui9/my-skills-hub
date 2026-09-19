@@ -5,7 +5,7 @@
   <p>
     <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-2ea44f"></a>
     <a href="#5-installation"><img alt="Install" src="https://img.shields.io/badge/install-Claude%20Code%20%7C%20Codex%20%7C%20OpenClaw%20%7C%20OpenCode%20%7C%20Hermes-111827"></a>
-    <a href="#6-skill-index"><img alt="Skills" src="https://img.shields.io/badge/skills-18-0ea5e9"></a>
+    <a href="#6-skill-index"><img alt="Skills" src="https://img.shields.io/badge/skills-19-0ea5e9"></a>
     <a href="README.md"><img alt="Language" src="https://img.shields.io/badge/language-English%20%7C%20中文-1f6feb"></a>
   </p>
   <p>
@@ -37,7 +37,8 @@
   - [5.1 `npx skills` Installation](#51-npx-skills-installation)
   - [5.2 Claude Code Installation](#52-claude-code-installation)
   - [5.3 Codex Installation](#53-codex-installation)
-  - [5.4 Other Agent Scenarios](#54-other-agent-scenarios)
+  - [5.4 Chatbox Installation and Usage](#54-chatbox-installation-and-usage)
+  - [5.5 Other Agent Scenarios](#55-other-agent-scenarios)
 - [6. Skill Index](#6-skill-index)
 - [7. Contribution and Development](#7-contribution-and-development)
 - [8. Star History](#8-star-history)
@@ -177,14 +178,9 @@ to be installed globally. List the skill names available in this repository:
 npx skills add Yuan1z0825/nature-skills --list
 ```
 
-Install every skill globally for Codex. The complete selection includes
-`nature-shared`, so skills that use the common references remain functional:
-
-```bash
-npx skills add Yuan1z0825/nature-skills --global --agent codex --skill '*' --yes --copy
-```
-
-Omit `--global` to install one independent skill in the current project:
+Start with the skills needed for the current task and include their shared dependencies.
+Omit `--global` for project-local installation; add it when the skill should be available
+across projects. For example:
 
 ```bash
 npx skills add Yuan1z0825/nature-skills --agent codex --skill nature-figure --yes --copy
@@ -198,7 +194,14 @@ npx skills add Yuan1z0825/nature-skills --global --agent codex \
   --skill nature-reader --skill nature-shared --yes --copy
 ```
 
-Install all skills for every agent supported by the CLI:
+If you need the complete collection, install every skill globally for Codex.
+This selection includes `nature-shared`:
+
+```bash
+npx skills add Yuan1z0825/nature-skills --global --agent codex --skill '*' --yes --copy
+```
+
+To install all skills for every agent supported by the CLI:
 
 ```bash
 npx skills add Yuan1z0825/nature-skills --all
@@ -365,9 +368,10 @@ The destination and check interval are both configurable:
 
 ### 5.3 Codex Installation
 
-Use the repository script to install or update Codex skills. It syncs every
+Use the repository script when installing or updating the complete skill collection. It syncs every
 top-level skill directory under `skills/` and verifies the copied contents with
-`diff`. It does not overwrite unrelated Codex skills.
+`diff`. It does not overwrite unrelated Codex skills. For a selected subset, use
+the `npx skills` installation above.
 
 ```bash
 git clone https://github.com/Yuan1z0825/nature-skills.git
@@ -498,7 +502,48 @@ Each destination has a separate log at
 `~/.local/state/nature-skills/<destination-id>/autoupdate.log`. Newly fetched
 skills normally take full effect in the next session.
 
-### 5.4 Other Agent Scenarios
+### 5.4 Chatbox Installation and Usage
+
+[Chatbox](https://chatboxai.app/) desktop provides a graphical Skills manager. Use a version with a **Settings → Skills** entry; this section applies to the desktop app.
+
+**Install from GitHub**
+
+1. Open **Settings → Skills** in Chatbox and click **Install from GitHub**.
+2. Paste `https://github.com/Yuan1z0825/nature-skills` and click **Scan**.
+3. Select the skills you need and click **Install Selected**. For a first try, choose `nature-polishing` and `nature-shared`; use **Select all** if you want the full collection.
+4. Check the result under **Installed Skills** and make sure the skills you want to use are enabled.
+
+`nature-shared` is a shared support package. Install it alongside skills that reference it, including `nature-polishing`, `nature-writing`, `nature-response`, `nature-reader`, and `nature-paper2ppt`; do not invoke it as a standalone task. Installing one skill does not automatically install other skill dependencies. The list may show frontmatter names: for example, `nature-proposal-writer` appears as `researchwrite`.
+
+**Start using the skills**
+
+Create a conversation, select a model that supports tool calling, and enable **Agent Mode**. Paste your text into the conversation and name the skill explicitly. For example:
+
+```text
+Use nature-polishing to rewrite the following Chinese paragraph in Nature-style English.
+Preserve its academic meaning, numerical values, and limits on conclusions.
+List the main changes and explain the reasons:
+
+[Paste your manuscript paragraph here]
+```
+
+For paper reading, install `nature-reader` and `nature-shared`, provide the paper file or an accessible local path, and ask:
+
+```text
+Use nature-reader to turn this paper into a Chinese-English Markdown reader
+with aligned figures and text. Preserve equations and source anchors,
+and save the deliverables to my specified output directory.
+```
+
+Check the skill-loading and tool-execution records in the conversation to confirm that the intended skill was loaded. If it does not trigger, check the skill toggle, Agent Mode, and whether the selected model supports tool calling.
+
+**Runtime dependencies and updates**
+
+Installing skills adds instructions and supporting files. Configure Python/R, PDF/PPTX tools, browsers, and MCP services according to each skill's documentation. For local files or scripts, grant the required directory and command access when Chatbox prompts you. External services such as image generation require their own credentials. A successful skill installation does not mean these external capabilities are configured.
+
+Use **Check Update** in a skill's action menu and follow the prompts to update it; also check `nature-shared` when it is a dependency. If GitHub scanning or downloading fails, download and extract this repository through **Code → Download ZIP**, click **Open Skills Folder** in Chatbox, and place the complete skill directories and `nature-shared` alongside one another in that folder. Refresh the skill list and enable them. Preserve `references/`, `static/`, scripts, and assets; do not copy only `SKILL.md`. For manual copies, match the directory name to the `name` in `SKILL.md` (for example, name the `nature-proposal-writer` directory `researchwrite`). Manually copied skills require manual updates.
+
+### 5.5 Other Agent Scenarios
 
 For OpenClaw, OpenCode, and Hermes, see the dedicated [integration guide](docs/open-source-agent-frameworks_EN.md).
 
@@ -521,7 +566,7 @@ The current `skills/` directory contains the following triggerable skills.
 
 | Skill | Status | Purpose | Example Triggers | Details |
 |---|---|---|---|---|
-| [`nature-figure`](skills/nature-figure/README_EN.md) | Stable | Submission-grade Python or R scientific figure workflow for Nature / high-impact journals, with separately noticed third-party figures4papers references, original templates, and OpenRouter GPT Image 2 schematic drafts | "Nature figure", "submission-grade figure", "publication plot", "scientific figure", "figures4papers", "paper schematic", "GPT Image 2" | [Details](skills/nature-figure/README_EN.md) |
+| [`nature-figure`](skills/nature-figure/README_EN.md) | Stable | Submission-grade Python or R scientific figure workflow for Nature / high-impact journals, with Results-level multi-panel evidence architecture, a render-time panel-alignment gate, automatic final-PDF text/graphic collision QA, separately noticed third-party figures4papers references, original templates, and OpenRouter GPT Image 2 schematic drafts | "Nature figure", "submission-grade figure", "publication plot", "scientific figure", "figures4papers", "paper schematic", "GPT Image 2" | [Details](skills/nature-figure/README_EN.md) |
 | [`nature-polishing`](skills/nature-polishing/README_EN.md) | Stable | Polish, restructure, or translate academic prose into Nature-style English, with manuscript-wide terminology, unit, precision, and claim-drift checks | "Nature style", "polishing", "academic writing", "English manuscript" | [Details](skills/nature-polishing/README_EN.md) |
 | [`nature-writing`](skills/nature-writing/README_EN.md) | Draft | Draft Nature-style manuscript sections and rebuild a paper argument | "Nature writing", "write an abstract", "write introduction", "manuscript draft", "paper writing" | [Details](skills/nature-writing/README_EN.md) |
 | [`nature-reviewer`](skills/nature-reviewer/README_EN.md) | Draft | Simulate Nature-style reviewer assessment with three mutually blind reports, tiered Major/Minor comments, and manuscript-internal consistency checks | "Nature reviewer", "pre-submission review", "reviewer report", "reviewer-perspective assessment" | [Details](skills/nature-reviewer/README_EN.md) |
@@ -532,6 +577,7 @@ The current `skills/` directory contains the following triggerable skills.
 | [`nature-paper-card`](skills/nature-paper-card/README_EN.md) | Beta | Deep-read one paper into a source-grounded Sections 01–16 Paper Card covering method logic, experiment-to-claim evidence, conclusion boundaries, critical analysis, and testable research ideas | "nature paper card", "deep-read paper", "Paper Card", "evidence chain", "conclusion boundaries" | [Details](skills/nature-paper-card/README_EN.md) |
 | [`nature-response`](skills/nature-response/README_EN.md) | Beta | Parse revision emails; create separate mutually blind reviewer responses, cover letters, red-marked manuscripts, LaTeX templates, and revision-package consistency checks | "response to reviewers", "rebuttal letter", "cover letter", "major revision", "revision email", "reviewer-comment response", "LaTeX template" | [Details](skills/nature-response/README_EN.md) |
 | [`nature-paper2ppt`](skills/nature-paper2ppt/README_EN.md) | Beta | Generate Chinese PPTX journal-club or paper-presentation decks from research papers | "paper PPT", "journal club", "paper to slides", "paper presentation" | [Details](skills/nature-paper2ppt/README_EN.md) |
+| [`nature-image2ppt`](skills/nature-image2ppt/README_EN.md) | Beta | Reconstruct slide images, scanned PDFs, and image-only PPTX files as object-level editable PowerPoint with rendered QA | "image to editable PowerPoint", "reconstruct slide screenshot", "scanned PDF to PPTX", "editable PPT" | [Details](skills/nature-image2ppt/README_EN.md) |
 | [`nature-paper-to-patent`](skills/nature-paper-to-patent/README_EN.md) | Beta | Generate evidence-constrained Chinese invention patent drafts and support patent-point mining, prior-art search, and iterative technical disclosure drafting | "paper to patent", "Chinese patent", "paper-to-patent", "claims drafting", "technical disclosure", "patent points" | [Details](skills/nature-paper-to-patent/README_EN.md) |
 | [`nature-ref-verifier`](skills/nature-ref-verifier/README_EN.md) | Stable | Cross-check references across multiple sources and flag author, title, year, volume, issue, and page inconsistencies | "verify refs", "check references", "reference verification", "ref check" | [Details](skills/nature-ref-verifier/README_EN.md) |
 | [`nature-academic-search`](skills/nature-academic-search/README_EN.md) | Beta | Multi-source literature search, citation verification, strict other-citation audits, article-level citation metric tables, influential citer profiling, and reference management | "search papers", "find articles", "literature search", "literature lookup", "verify DOI", "strict other citation", "article citation table", "influential citer" | [Details](skills/nature-academic-search/README_EN.md) |
@@ -706,4 +752,4 @@ After adding a skill, update the [Skill Index](#6-skill-index) table:
 
 ## 8. Star History
 
-[![Star History Chart](assets/star-history-20260804T032829Z.svg)](https://star-history.com/#Yuan1z0825/nature-skills&Date)
+[![Star History Chart](assets/star-history-20260919T023936Z.svg)](https://star-history.com/#Yuan1z0825/nature-skills&Date)
