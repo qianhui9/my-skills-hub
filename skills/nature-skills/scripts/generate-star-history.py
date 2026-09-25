@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import collections
-import concurrent.futures
 import datetime as dt
 import html
 import json
@@ -21,6 +20,37 @@ import urllib.request
 
 
 GITHUB_API = "https://api.github.com"
+GITHUB_GRAPHQL_API = f"{GITHUB_API}/graphql"
+
+STARGAZERS_QUERY = """
+query StarHistory($owner: String!, $name: String!, $cursor: String) {
+  repository(owner: $owner, name: $name) {
+    stargazerCount
+    stargazers(
+      first: 100
+      after: $cursor
+      orderBy: {field: STARRED_AT, direction: ASC}
+    ) {
+      edges {
+        starredAt
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+  rateLimit {
+    cost
+    remaining
+    resetAt
+  }
+}
+"""
+
+
+class StarHistoryUnavailable(RuntimeError):
+    """Raised when the API response cannot support a trustworthy chart."""
 
 
 def parse_args() -> argparse.Namespace:
@@ -53,8 +83,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--workers",
         type=int,
-        default=4,
-        help="Concurrent page fetches. Keep modest to avoid TLS/rate-limit errors.",
+        default=1,
+        help=(
+            "Deprecated compatibility option. GraphQL cursor pagination is "
+            "sequential, so this value is ignored."
+        ),
     )
     parser.add_argument(
         "--retries",
@@ -79,21 +112,39 @@ def local_gh_token() -> str | None:
     return token or None
 
 
-def github_json(url: str, token: str | None, retries: int) -> object:
+def github_graphql(
+    query: str,
+    variables: dict[str, object],
+    token: str | None,
+    retries: int,
+) -> dict:
+    """Execute an authenticated GitHub GraphQL query with bounded retries."""
+    if not token:
+        raise StarHistoryUnavailable(
+            "GitHub GraphQL stargazer pagination requires GITHUB_TOKEN, GH_TOKEN, "
+            "or an authenticated gh CLI."
+        )
+
     headers = {
-        "Accept": "application/vnd.github.star+json",
+        "Accept": "application/vnd.github+json",
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
         "User-Agent": "nature-skills-static-star-history",
         "X-GitHub-Api-Version": "2022-11-28",
     }
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
-
+    body = json.dumps({"query": query, "variables": variables}).encode("utf-8")
     last_error: Exception | None = None
+
     for attempt in range(retries + 1):
-        request = urllib.request.Request(url, headers=headers)
+        request = urllib.request.Request(
+            GITHUB_GRAPHQL_API,
+            data=body,
+            headers=headers,
+            method="POST",
+        )
         try:
             with urllib.request.urlopen(request, timeout=45) as response:
-                return json.loads(response.read().decode("utf-8"))
+                payload = json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as exc:
             last_error = exc
             if exc.code in {403, 429, 500, 502, 503, 504} and attempt < retries:
@@ -102,7 +153,10 @@ def github_json(url: str, token: str | None, retries: int) -> object:
                     delay = max(5, int(reset) - int(time.time()) + 2)
                 else:
                     delay = min(60, 2 ** attempt)
-                print(f"request failed with HTTP {exc.code}; retrying in {delay}s", file=sys.stderr)
+                print(
+                    f"GraphQL request failed with HTTP {exc.code}; retrying in {delay}s",
+                    file=sys.stderr,
+                )
                 time.sleep(delay)
                 continue
             raise
@@ -110,64 +164,152 @@ def github_json(url: str, token: str | None, retries: int) -> object:
             last_error = exc
             if attempt < retries:
                 delay = min(60, 2 ** attempt)
-                print(f"request failed: {exc}; retrying in {delay}s", file=sys.stderr)
+                print(
+                    f"GraphQL request failed: {exc}; retrying in {delay}s",
+                    file=sys.stderr,
+                )
                 time.sleep(delay)
                 continue
             raise
-    raise RuntimeError(f"GitHub request failed after retries: {last_error}")
+
+        if not isinstance(payload, dict):
+            raise RuntimeError("GitHub GraphQL returned a non-object response")
+        errors = payload.get("errors")
+        if errors:
+            raise RuntimeError(f"GitHub GraphQL returned errors: {errors}")
+        return payload
+
+    raise RuntimeError(f"GitHub GraphQL request failed after retries: {last_error}")
 
 
-def fetch_stargazers(repo: str, token: str | None, workers: int, retries: int) -> list[dict]:
-    repo_url = f"{GITHUB_API}/repos/{repo}"
-    repo_info = github_json(repo_url, token, retries)
-    if not isinstance(repo_info, dict) or "stargazers_count" not in repo_info:
-        raise RuntimeError(f"Could not read repository metadata for {repo}")
+def fetch_stargazers(
+    repo: str,
+    token: str | None,
+    workers: int,
+    retries: int,
+) -> tuple[int, list[dict]]:
+    """Fetch every active stargazer timestamp using cursor pagination.
 
-    total_stars = int(repo_info["stargazers_count"])
-    pages = max(1, math.ceil(total_stars / 100))
-    print(f"Fetching {total_stars:,} stars from {repo} across {pages} pages")
+    GitHub's REST stargazers endpoint rejects numeric pages above 400. The
+    GraphQL connection uses opaque cursors and continues beyond 40,000 stars.
+    ``workers`` remains in the signature for CLI compatibility but is ignored
+    because each cursor depends on the preceding page.
+    """
+    del workers
+    try:
+        owner, name = repo.split("/", 1)
+    except ValueError as exc:
+        raise ValueError("repo must be in owner/name form") from exc
+    if not owner or not name:
+        raise ValueError("repo must be in owner/name form")
 
-    def fetch_page(page: int) -> tuple[int, list[dict]]:
-        url = f"{GITHUB_API}/repos/{repo}/stargazers?per_page=100&page={page}"
-        data = github_json(url, token, retries)
-        if not isinstance(data, list):
-            raise RuntimeError(f"Unexpected stargazers response for page {page}")
-        return page, data
-
+    cursor: str | None = None
     items: list[dict] = []
     completed = 0
-    executor = concurrent.futures.ThreadPoolExecutor(max_workers=max(1, workers))
-    futures = [executor.submit(fetch_page, page) for page in range(1, pages + 1)]
-    try:
-        for future in concurrent.futures.as_completed(futures):
-            page, page_items = future.result()
-            items.extend(page_items)
-            completed += 1
-            if completed == 1 or completed % 25 == 0 or completed == pages:
-                print(f"Fetched {completed}/{pages} pages (latest completed page {page})")
-    except Exception:
-        for future in futures:
-            future.cancel()
-        executor.shutdown(wait=False, cancel_futures=True)
-        raise
-    else:
-        executor.shutdown(wait=True)
+    expected_pages: int | None = None
+    total_stars = 0
 
-    return items
+    while True:
+        payload = github_graphql(
+            STARGAZERS_QUERY,
+            {"owner": owner, "name": name, "cursor": cursor},
+            token,
+            retries,
+        )
+        data = payload.get("data")
+        if not isinstance(data, dict):
+            raise RuntimeError("GitHub GraphQL response is missing data")
+        repo_info = data.get("repository")
+        if not isinstance(repo_info, dict):
+            raise RuntimeError(f"Could not read repository metadata for {repo}")
+
+        try:
+            total_stars = int(repo_info["stargazerCount"])
+            connection = repo_info["stargazers"]
+            edges = connection["edges"]
+            page_info = connection["pageInfo"]
+        except (KeyError, TypeError, ValueError) as exc:
+            raise RuntimeError("Malformed GitHub GraphQL stargazer response") from exc
+        if (
+            not isinstance(connection, dict)
+            or not isinstance(edges, list)
+            or not isinstance(page_info, dict)
+        ):
+            raise RuntimeError("Malformed GitHub GraphQL stargazer connection")
+
+        if expected_pages is None:
+            if total_stars == 0:
+                print(f"No stars found for {repo}; writing an empty history.")
+            expected_pages = max(1, math.ceil(total_stars / 100))
+            print(
+                f"Fetching {total_stars:,} stars from {repo} via GraphQL "
+                f"cursor pagination ({expected_pages} pages expected)"
+            )
+
+        for edge in edges:
+            if not isinstance(edge, dict):
+                items.append({})
+            else:
+                items.append({"starred_at": edge.get("starredAt")})
+
+        completed += 1
+        has_next_page = page_info.get("hasNextPage")
+        if not isinstance(has_next_page, bool):
+            raise RuntimeError("GitHub GraphQL pageInfo is missing hasNextPage")
+        if completed == 1 or completed % 25 == 0 or not has_next_page:
+            print(
+                f"Fetched {completed} GraphQL page(s); "
+                f"collected {len(items):,}/{total_stars:,} stargazers"
+            )
+        if not has_next_page:
+            break
+
+        next_cursor = page_info.get("endCursor")
+        if not isinstance(next_cursor, str) or not next_cursor or next_cursor == cursor:
+            raise RuntimeError("GitHub GraphQL pagination did not advance its cursor")
+        cursor = next_cursor
+
+    if abs(len(items) - total_stars) > 100:
+        raise StarHistoryUnavailable(
+            f"GitHub reported {total_stars:,} stars but returned {len(items):,} "
+            "stargazer timestamps; leaving the existing chart unchanged."
+        )
+    if len(items) != total_stars:
+        print(
+            f"Repository changed during pagination: metadata reported {total_stars:,} "
+            f"stars and {len(items):,} timestamp records were fetched. "
+            "Using the fetched records for this snapshot.",
+            file=sys.stderr,
+        )
+    return len(items), items
 
 
-def build_daily_points(items: list[dict]) -> list[tuple[dt.date, int]]:
+def build_daily_points(items: list[dict], expected_total: int) -> list[tuple[dt.date, int]]:
     dates = []
+    missing_timestamps = 0
+    invalid_timestamps = 0
     for item in items:
+        if not isinstance(item, dict):
+            invalid_timestamps += 1
+            continue
         starred_at = item.get("starred_at")
         if not starred_at:
+            missing_timestamps += 1
             continue
-        dates.append(dt.datetime.fromisoformat(starred_at.replace("Z", "+00:00")).date())
+        try:
+            dates.append(dt.datetime.fromisoformat(starred_at.replace("Z", "+00:00")).date())
+        except (AttributeError, TypeError, ValueError):
+            invalid_timestamps += 1
 
-    if not dates:
-        raise RuntimeError(
-            "GitHub did not return starred_at timestamps. "
-            "Make sure the request uses Accept: application/vnd.github.star+json and a token with access."
+    if expected_total == 0:
+        return []
+
+    skipped = missing_timestamps + invalid_timestamps
+    if skipped or not dates:
+        raise StarHistoryUnavailable(
+            f"GitHub returned {len(dates)} usable starred_at timestamp(s) from "
+            f"{len(items)} record(s); leaving the existing chart unchanged. "
+            "Check the API Accept header and token permissions."
         )
 
     dates.sort()
@@ -184,6 +326,29 @@ def build_daily_points(items: list[dict]) -> list[tuple[dt.date, int]]:
     return points
 
 
+def generate_empty_svg(repo: str) -> str:
+    """Generate a valid chart placeholder when no star dates are available."""
+    width, height = 960, 560
+    left, right, top, bottom = 82, 34, 72, 76
+    font = "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
+    escaped_repo = html.escape(repo, quote=True)
+    plot_bottom = height - bottom
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-labelledby="title desc">
+  <title id="title">Star history for {escaped_repo}</title>
+  <desc id="desc">No star history is available for this repository yet.</desc>
+  <rect width="100%" height="100%" rx="18" fill="#ffffff"/>
+  <text x="{left}" y="34" font-family="{font}" font-size="24" font-weight="700" fill="#111827">Star History</text>
+  <text x="{left}" y="58" font-family="{font}" font-size="13" fill="#6b7280">{escaped_repo} · no stars yet</text>
+  <g font-family="{font}">
+    <line x1="{left}" y1="{top}" x2="{left}" y2="{plot_bottom}" stroke="#d1d5db" stroke-width="1.2"/>
+    <line x1="{left}" y1="{plot_bottom}" x2="{width - right}" y2="{plot_bottom}" stroke="#d1d5db" stroke-width="1.2"/>
+    <text x="{(left + width - right) / 2:.1f}" y="{top + (plot_bottom - top) / 2:.1f}" text-anchor="middle" font-size="18" fill="#6b7280">No stars yet</text>
+    <text x="{left}" y="{height - 16}" font-size="12" fill="#9ca3af">Source: GitHub stargazers API · Static snapshot</text>
+  </g>
+</svg>
+'''
+
+
 def nice_y_ticks(max_y: int) -> list[int]:
     rough_step = max_y / 5
     power = 10 ** math.floor(math.log10(rough_step)) if rough_step > 0 else 1
@@ -192,7 +357,8 @@ def nice_y_ticks(max_y: int) -> list[int]:
         step = multiplier * power
         if rough_step <= step:
             break
-    ticks = list(range(0, int(math.ceil(max_y / step) * step) + 1, int(step)))
+    step = max(1, int(math.ceil(step)))
+    ticks = list(range(0, int(math.ceil(max_y / step) * step) + 1, step))
     if ticks[-1] < max_y:
         ticks.append(max_y)
     return ticks
@@ -214,6 +380,43 @@ def month_ticks(start: dt.date, end: dt.date, limit: int = 8) -> list[dt.date]:
     if end not in ticks:
         ticks.append(end)
     return ticks
+
+
+def x_axis_ticks(
+    start: dt.date,
+    end: dt.date,
+    plot_width: float,
+    limit: int = 8,
+    min_end_gap_px: float = 96,
+) -> list[dt.date]:
+    """Return date ticks with enough room for the exact end-date label."""
+    ticks = month_ticks(start, end, limit)
+    if len(ticks) < 2 or ticks[-1] != end:
+        return ticks
+
+    span_days = max((end - start).days, 1)
+    end_gap_px = ((end - ticks[-2]).days / span_days) * plot_width
+    if end_gap_px < min_end_gap_px:
+        del ticks[-2]
+    return ticks
+
+
+def star_polygon_points(
+    cx: float,
+    cy: float,
+    outer_radius: float = 14,
+    inner_radius: float = 6.4,
+) -> str:
+    """Return the ten alternating vertices of a five-point star."""
+    vertices = []
+    for index in range(10):
+        radius = outer_radius if index % 2 == 0 else inner_radius
+        angle = -math.pi / 2 + index * math.pi / 5
+        vertices.append(
+            f"{cx + radius * math.cos(angle):.1f},"
+            f"{cy + radius * math.sin(angle):.1f}"
+        )
+    return " ".join(vertices)
 
 
 def generate_svg(
@@ -260,11 +463,12 @@ def generate_svg(
         grid.append(f'<line x1="{left}" y1="{y:.1f}" x2="{width - right}" y2="{y:.1f}" stroke="#e5e7eb" stroke-width="1"/>')
         grid.append(f'<text x="{left - 12}" y="{y + 4:.1f}" text-anchor="end" font-size="12" fill="#6b7280">{tick:,}</text>')
 
-    for tick in month_ticks(start, end):
+    for tick in x_axis_ticks(start, end, plot_width):
         x = x_for(tick)
         label = tick.strftime("%Y-%m") if tick.day == 1 else tick.strftime("%Y-%m-%d")
+        text_anchor = "end" if tick == end else "middle"
         grid.append(f'<line x1="{x:.1f}" y1="{top}" x2="{x:.1f}" y2="{top + plot_height}" stroke="#f3f4f6" stroke-width="1"/>')
-        grid.append(f'<text x="{x:.1f}" y="{height - 38}" text-anchor="middle" font-size="12" fill="#6b7280">{html.escape(label)}</text>')
+        grid.append(f'<text x="{x:.1f}" y="{height - 38}" text-anchor="{text_anchor}" font-size="12" fill="#6b7280">{html.escape(label)}</text>')
 
     generated_at = generated_at or dt.datetime.now(dt.timezone.utc)
     updated = generated_at.strftime("%Y-%m-%d %H:%M UTC")
@@ -278,14 +482,18 @@ def generate_svg(
   <rect width="100%" height="100%" rx="18" fill="#ffffff"/>
   <text x="{left}" y="34" font-family="{font}" font-size="24" font-weight="700" fill="#111827">Star History</text>
   <text x="{left}" y="58" font-family="{font}" font-size="13" fill="#6b7280">{escaped_repo} · {total_text} stars · generated {html.escape(updated)}</text>
+  <g data-kpi="current-star-count" role="group" aria-label="Current star count: {total_text}" font-family="{font}">
+    <polygon data-marker="current-star-summary" points="{star_polygon_points(748, 31, 13, 6)}" fill="#f59e0b"/>
+    <text x="776" y="39" font-size="28" font-weight="800" letter-spacing="-0.5" fill="#e11d48">{total_text}</text>
+    <text x="776" y="58" font-size="11.5" fill="#6b7280">Current Star Count</text>
+  </g>
   <g font-family="{font}">
     {''.join(grid)}
     <line x1="{left}" y1="{top}" x2="{left}" y2="{top + plot_height}" stroke="#d1d5db" stroke-width="1.2"/>
     <line x1="{left}" y1="{top + plot_height}" x2="{width - right}" y2="{top + plot_height}" stroke="#d1d5db" stroke-width="1.2"/>
     <polygon points="{area_points}" fill="#38bdf8" opacity="0.16"/>
     <polyline points="{line_points}" fill="none" stroke="#0284c7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="{x_for(end):.1f}" cy="{y_for(total):.1f}" r="4.5" fill="#0284c7" stroke="#ffffff" stroke-width="2"/>
-    <text x="{width - right}" y="{y_for(total) - 10:.1f}" text-anchor="end" font-size="13" font-weight="700" fill="#0369a1">{total_text} stars</text>
+    <polygon data-marker="latest-star-count" points="{star_polygon_points(x_for(end), y_for(total))}" fill="#dc2626" stroke="#ffffff" stroke-width="2.5" stroke-linejoin="round"/>
     <text x="{left}" y="{height - 16}" font-size="12" fill="#9ca3af">Source: GitHub stargazers API · Static snapshot to avoid third-party chart timeouts</text>
   </g>
 </svg>
@@ -336,12 +544,20 @@ def main() -> int:
     if "/" not in args.repo:
         raise SystemExit("--repo must be in owner/name form")
 
-    items = fetch_stargazers(args.repo, args.token, args.workers, args.retries)
-    points = build_daily_points(items)
+    total_stars, items = fetch_stargazers(args.repo, args.token, args.workers, args.retries)
+    try:
+        points = build_daily_points(items, total_stars)
+    except StarHistoryUnavailable as exc:
+        print(f"Warning: {exc}", file=sys.stderr)
+        return 0
     output = pathlib.Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     generated_at = dt.datetime.now(dt.timezone.utc)
-    svg = generate_svg(args.repo, points, generated_at)
+    svg = generate_svg(args.repo, points, generated_at) if points else generate_empty_svg(args.repo)
+    previous_svg = output.read_text(encoding="utf-8") if output.exists() else None
+    if previous_svg == svg:
+        print(f"{output} is already up to date")
+        return 0
     output.write_text(svg, encoding="utf-8")
     cache_token = generated_at.strftime("%Y%m%dT%H%M%SZ")
     versioned_output = versioned_output_path(output, cache_token)
@@ -355,9 +571,10 @@ def main() -> int:
             output_ref,
             versioned_ref,
         )
+    total = points[-1][1] if points else 0
     print(
         f"Wrote {output} and {versioned_output} with "
-        f"{points[-1][1]:,} stars and {len(points):,} daily points"
+        f"{total:,} stars and {len(points):,} daily points"
     )
     return 0
 
