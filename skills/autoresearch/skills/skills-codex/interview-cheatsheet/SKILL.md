@@ -1,7 +1,7 @@
 ---
 name: interview-cheatsheet
 description: "Generate a long-form Chinese interview-prep cheat sheet on a specific ML/LLM topic — formulas with derivations, from-scratch PyTorch code, comparison tables, and 25 高频面试题 (L1 必会 / L2 进阶 / L3 顶级 lab). Use when the user says '写面试 cheat sheet', '写一份 X 教程', '帮我准备 Y 面试题', '出一份 X 速查', or wants a 600-1000 line Chinese tutorial on a specific ML topic."
-argument-hint: <topic> [--effort balanced|max] [--byline "Name (姓名), Affiliation"] [--commit false]
+argument-hint: '<topic> [--effort balanced|max] [--byline "Name (姓名), Affiliation"] [--commit false]'
 allowed-tools: Bash(*), Read, Write, Edit, spawn_agent
 ---
 
@@ -74,9 +74,9 @@ If the topic is too broad to fit in one cheat sheet, **stop and ask the user to 
 
 Write directly to `docs/tutorials/<slug>_tutorial.md`. Follow the style guide. Length target: 600 lines (balanced) or 1000 lines (max), ±20%.
 
-### Step 3 — Fresh-agent math/code review (Codex GPT-5.6-Sol xhigh, same-family provisional)
+### Step 3 — Fresh-agent math/code review (Codex GPT-6-Astra xhigh, same-family provisional)
 
-Invoke `spawn_agent` with `model: gpt-5.6-sol`, `reasoning_effort: xhigh`, and a fresh thread. Do not reuse prior reviewer context.
+Invoke `spawn_agent` with `model: gpt-6-astra`, `reasoning_effort: xhigh`, and a fresh thread. Do not reuse prior reviewer context.
 
 Reviewer prompt:
 
@@ -209,7 +209,7 @@ Suggest the row to the user but let them edit it in themselves if they want to c
 
 | Invariant | How it's enforced |
 |---|---|
-| Executor/reviewer family | Codex drafts; fresh gpt-5.6-sol reviews (math/code stage and render stage), same-family provisional |
+| Executor/reviewer family | Codex drafts; fresh gpt-6-astra reviews (math/code stage and render stage), same-family provisional |
 | Fresh agent per reviewer call | Step 3 + render's own gate both use fresh `spawn_agent` calls, not `send_input` |
 | Codex reasoning = xhigh | Hardcoded in Step 3 reviewer config |
 | Personal info redaction | Both math/code reviewer and render reviewer check; banlist in style guide |
