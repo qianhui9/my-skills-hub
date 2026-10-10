@@ -26,11 +26,11 @@ Override inline: `/research-pipeline "topic" — auto proceed: false, illustrati
 
 | Constant | Default | Description | Pass-through |
 |----------|---------|-------------|:---:|
-| `AUTO_PROCEED` | true | Auto-continue with top-ranked option if user doesn't respond | → `idea-discovery` |
+| `AUTO_PROCEED` | true | At each selection checkpoint, report the top-ranked option and continue in the same turn; `false` asks for explicit confirmation | → `idea-discovery` → `paper-writing` when `AUTO_WRITE=true` |
 | `ARXIV_DOWNLOAD` | false | Download top arXiv PDFs after literature search | → `idea-discovery` → `research-lit` |
 | `HUMAN_CHECKPOINT` | false | When `true`, pause after each review round for approval | → `auto-review-loop` |
 | `WANDB` | false | Auto-add W&B logging to experiments | → `experiment-bridge` → `run-experiment` |
-| `CODE_REVIEW` | true | GPT-5.6-Sol reviews experiment code before deployment | → `experiment-bridge` |
+| `CODE_REVIEW` | true | GPT-6-Astra reviews experiment code before deployment | → `experiment-bridge` |
 | `BASE_REPO` | false | GitHub repo URL to clone as base codebase for experiments | → `experiment-bridge` |
 | `GPU` | `local` | GPU target: `local`, `remote` (SSH), or `vast` ([Vast.ai](https://vast.ai) on-demand rental) | → `experiment-bridge` → `run-experiment` |
 | `COMPACT` | false | Generate compact summary files for short-context models and session recovery | → all workflows |
@@ -69,14 +69,19 @@ Override inline: `/idea-discovery "topic" — pilot budget: 4h per idea, sources
 | `PILOT_TIMEOUT_HOURS` | 3h | Hard timeout — kill runaway pilots, collect partial results | — |
 | `MAX_PILOT_IDEAS` | 3 | Maximum number of ideas to pilot in parallel | — |
 | `MAX_TOTAL_GPU_HOURS` | 8h | Total GPU budget across all pilots | — |
-| `AUTO_PROCEED` | true | Auto-continue with top-ranked option if user doesn't respond | — |
+| `AUTO_PROCEED` | true | Report the top-ranked option and continue in the same turn; `false` asks for explicit confirmation | — |
 | `ARXIV_DOWNLOAD` | false | Download top arXiv PDFs after literature search | → `research-lit` |
 
 </details>
 
+`AUTO_PROCEED=true` applies to its own selection checkpoints only. Explicit
+user-controlled gates, such as Feishu interactive approval, a missing venue,
+or required manual figures, remain blocking. The pipeline never relies on a
+silent-response timeout to resume after a turn ends.
+
 ### Experiment Bridge (`experiment-bridge`)
 
-Tune deployment safety: GPT-5.6-Sol code review, auto-deploy after review, sanity-test smallest experiment first, parallel run cap, W&B logging, and base-repo URL.
+Tune deployment safety: GPT-6-Astra code review, auto-deploy after review, sanity-test smallest experiment first, parallel run cap, W&B logging, and base-repo URL.
 
 Override inline: `/experiment-bridge — base repo: https://github.com/org/project`
 
@@ -85,7 +90,7 @@ Override inline: `/experiment-bridge — base repo: https://github.com/org/proje
 
 | Constant | Default | Description |
 |----------|---------|-------------|
-| `CODE_REVIEW` | true | GPT-5.6-Sol xhigh reviews code before deployment. Catches logic bugs before wasting GPU hours |
+| `CODE_REVIEW` | true | GPT-6-Astra xhigh reviews code before deployment. Catches logic bugs before wasting GPU hours |
 | `AUTO_DEPLOY` | true | Automatically deploy experiments after implementation + review. Set `false` to manually inspect |
 | `SANITY_FIRST` | true | Run smallest experiment first to catch setup bugs before full deployment |
 | `MAX_PARALLEL_RUNS` | 4 | Maximum experiments to deploy in parallel (limited by available GPUs) |
@@ -134,7 +139,7 @@ Override inline: `/paper-write — target venue: NeurIPS, illustration: mermaid`
 
 ### General (all skills using Codex MCP)
 
-Tune the reviewer model used by every Codex MCP call (default `gpt-5.6-sol`), or fork the SKILL.md to customize prompt templates and the per-skill tool allowlist.
+Tune the reviewer model used by every Codex MCP call (default `gpt-6-astra`), or fork the SKILL.md to customize prompt templates and the per-skill tool allowlist.
 
 - **Prompt templates** — tailor the review persona and evaluation criteria
 - **`allowed-tools`** — restrict or expand what each skill can do
@@ -144,8 +149,7 @@ Tune the reviewer model used by every Codex MCP call (default `gpt-5.6-sol`), or
 
 | Constant | Default | Description |
 |----------|---------|-------------|
-| `REVIEWER_MODEL` | `gpt-5.6-sol` | OpenAI model used via Codex MCP. Also available: `gpt-5.3-codex`, `gpt-5.2-codex`, `o3`. See [supported models](https://developers.openai.com/codex/models/) for full list. |
+| `REVIEWER_MODEL` | `gpt-6-astra` | OpenAI model used via Codex MCP. Also available: `gpt-5.3-codex`, `gpt-5.2-codex`, `o3`. See [supported models](https://developers.openai.com/codex/models/) for full list. |
 
 </details>
-
 

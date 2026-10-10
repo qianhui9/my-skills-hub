@@ -5,7 +5,6 @@ import unittest
 import urllib.error
 from unittest import mock
 
-
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 
