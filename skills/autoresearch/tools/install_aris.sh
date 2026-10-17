@@ -47,6 +47,11 @@
 #                          (default: refuse)
 #   --clear-stale-lock     remove stale lock dir from a crashed prior run
 #                          (host+PID metadata is verified before removal)
+#   --no-agent-profiles    never put Copilot reviewer profiles into the
+#                          project's .github/agents/ (remembered in .aris/;
+#                          undo with --agent-profiles). Without either flag
+#                          the profiles are deployed only while
+#                          auto-review-loop is installed.
 #
 # Safety rules enforced:
 #   S1  Never delete a path that is not a symlink.
@@ -67,6 +72,8 @@
 #       path or differently-targeted symlink at `.aris/tools` is left alone.
 #   S12 Temp files live in the same directory as the destination.
 #   S13 Skill names must match ^[A-Za-z0-9][A-Za-z0-9._-]*$ (slug regex).
+#   S14 Copilot agent links are removed only when listed in the dedicated
+#       installed-agent-profiles.txt ownership sidecar.
 
 set -euo pipefail
 
@@ -74,6 +81,7 @@ set -euo pipefail
 MANIFEST_VERSION="1"
 MANIFEST_NAME="installed-skills.txt"
 MANIFEST_PREV_NAME="installed-skills.txt.prev"
+AGENT_MANIFEST_NAME="installed-agent-profiles.txt"
 DECLINED_NAME="skills-declined.txt"
 CATALOG_REL="tools/skill-groups.tsv"
 GLOBAL_POINTER="$HOME/.aris/repo"
@@ -85,6 +93,9 @@ BLOCK_BEGIN="<!-- ARIS:BEGIN -->"
 BLOCK_END="<!-- ARIS:END -->"
 SAFE_NAME_REGEX='^[A-Za-z0-9][A-Za-z0-9._-]*$'
 SUPPORT_NAMES=("shared-references")
+AGENT_PROFILES_SRC=".github/agents"  # Copilot agent profiles deployed alongside skills (F5)
+AGENT_PROFILES_OPT_OUT_NAME="agent-profiles-opt-out"  # #431: remembered --no-agent-profiles
+AGENT_PROFILES_FLAG=""  # "off" (--no-agent-profiles) | "on" (--agent-profiles) | "" (remembered choice)
 EXCLUDE_TOP_NAMES=("skills-codex" "skills-codex.bak")  # not skills, not symlinked
 
 # ─── Argument parsing ─────────────────────────────────────────────────────────
@@ -156,6 +167,8 @@ while [[ $# -gt 0 ]]; do
         --from-old)          FORWARDED_ARGS+=("$1"); FROM_OLD=true; CLAUDE_ONLY_FLAGS_USED+=("--from-old"); shift ;;
         --migrate-copy)      FORWARDED_ARGS+=("$1" "${2:?--migrate-copy requires keep-user|prefer-upstream}"); MIGRATE_COPY="$2"; CLAUDE_ONLY_FLAGS_USED+=("--migrate-copy"); shift 2 ;;
         --clear-stale-lock)  FORWARDED_ARGS+=("$1"); CLEAR_STALE_LOCK=true; shift ;;
+        --no-agent-profiles) FORWARDED_ARGS+=("$1"); AGENT_PROFILES_FLAG="off"; CLAUDE_ONLY_FLAGS_USED+=("--no-agent-profiles"); shift ;;
+        --agent-profiles)    FORWARDED_ARGS+=("$1"); AGENT_PROFILES_FLAG="on"; CLAUDE_ONLY_FLAGS_USED+=("--agent-profiles"); shift ;;
         --adopt-existing)    FORWARDED_ARGS+=("$1" "${2:?--adopt-existing requires NAME}"); ADOPT_NAMES+=("$2"); CLAUDE_ONLY_FLAGS_USED+=("--adopt-existing"); shift 2 ;;
         --replace-link)      FORWARDED_ARGS+=("$1" "${2:?--replace-link requires NAME}"); REPLACE_LINK_NAMES+=("$2"); shift 2 ;;
         --groups)            FORWARDED_ARGS+=("$1" "${2:?--groups requires A,B,...}"); SELECT_GROUPS="${SELECT_GROUPS:+$SELECT_GROUPS,}$2"; shift 2 ;;
@@ -641,6 +654,8 @@ PROJECT_SKILLS_DIR="$PROJECT_PATH/$SKILLS_REL"
 PROJECT_ARIS_DIR="$PROJECT_PATH/$ARIS_DIR_NAME"
 MANIFEST_PATH="$PROJECT_ARIS_DIR/$MANIFEST_NAME"
 MANIFEST_PREV="$PROJECT_ARIS_DIR/$MANIFEST_PREV_NAME"
+AGENT_MANIFEST_PATH="$PROJECT_ARIS_DIR/$AGENT_MANIFEST_NAME"
+AGENT_PROFILES_OPT_OUT_PATH="$PROJECT_ARIS_DIR/$AGENT_PROFILES_OPT_OUT_NAME"
 LOCK_DIR="$PROJECT_ARIS_DIR/$LOCK_DIR_NAME"
 DOC_FILE="$PROJECT_PATH/$DOC_FILE_NAME"
 CATALOG_PATH="$ARIS_REPO/$CATALOG_REL"
@@ -655,7 +670,7 @@ fi
 # (.aris and .claude/skills may not exist yet — only check if present.)
 check_no_symlinked_parents() {
     local p
-    for p in "$PROJECT_ARIS_DIR" "$PROJECT_PATH/.claude" "$PROJECT_SKILLS_DIR"; do
+    for p in "$PROJECT_ARIS_DIR" "$PROJECT_PATH/.claude" "$PROJECT_SKILLS_DIR" "$PROJECT_PATH/.github" "$PROJECT_PATH/.github/agents"; do
         if is_symlink "$p"; then
             die "S9: $p is a symlink — refusing to install (would mutate symlink target)"
         fi
@@ -990,6 +1005,150 @@ remove_tools_symlink() {
     fi
 }
 
+# F5: Deploy Copilot agent profiles from <aris-repo>/.github/agents/ to
+# <project>/.github/agents/. Each .agent.md file is symlinked individually;
+# user-created files/dirs/symlinks at the target path are left alone.
+# Pure-additive — existing users who don't rerun the installer never see
+# this. Idempotent across re-runs.
+record_managed_agent_profile() {
+    local name="$1" tmp="$AGENT_MANIFEST_PATH.tmp.$$" unsorted="$AGENT_MANIFEST_PATH.unsorted.$$"
+    mkdir -p "$PROJECT_ARIS_DIR"
+    if [[ -L "$AGENT_MANIFEST_PATH" ]]; then
+        warn "$AGENT_MANIFEST_PATH is a symlink; refusing to record agent ownership"
+        return 1
+    fi
+    if [[ -f "$AGENT_MANIFEST_PATH" ]]; then
+        cp "$AGENT_MANIFEST_PATH" "$unsorted" || { rm -f "$unsorted" "$tmp"; return 1; }
+    else
+        : > "$unsorted" || return 1
+    fi
+    printf '%s\n' "$name" >> "$unsorted" || { rm -f "$unsorted" "$tmp"; return 1; }
+    sort -u "$unsorted" > "$tmp" || { rm -f "$unsorted" "$tmp"; return 1; }
+    rm -f "$unsorted"
+    mv -f "$tmp" "$AGENT_MANIFEST_PATH"
+}
+
+ensure_agent_profiles() {
+    local src_dir="$ARIS_REPO/$AGENT_PROFILES_SRC"
+    [[ -d "$src_dir" ]] || return 0  # no profiles to deploy
+    [[ ! -L "$src_dir" ]] || { warn "skipping symlinked upstream agents directory: $src_dir"; return 0; }
+    local target_dir="$PROJECT_PATH/.github/agents"
+    local deployed=0 name src target
+
+    for src in "$src_dir"/*.agent.md; do
+        [[ -f "$src" ]] || continue
+        # Resolve symlink and verify it's within the expected directory
+        local resolved; resolved="$(canonicalize "$src")"
+        local src_canon; src_canon="$(canonicalize "$src_dir")"
+        [[ "$resolved" == "$src_canon"/* ]] || { warn "skipping external symlink: $src -> $resolved"; continue; }
+        name="$(basename "$src")"
+        target="$target_dir/$name"
+
+        if is_symlink "$target"; then
+            local cur; cur="$(read_link_target "$target")"
+            [[ "$cur" != /* ]] && cur="$(canonicalize "$(dirname "$target")/$cur")"
+            if [[ "$cur" == "$src" ]]; then
+                continue  # already correct
+            fi
+            warn ".github/agents/$name already exists with different target ($cur); leaving alone"
+            continue
+        fi
+
+        if [[ -e "$target" ]]; then
+            warn ".github/agents/$name already exists as a non-symlink path; leaving alone"
+            continue
+        fi
+
+        if $DRY_RUN; then
+            log "  (dry-run) ln -s $src $target"
+        else
+            mkdir -p "$target_dir"
+            ln -s "$src" "$target"
+            if ! record_managed_agent_profile "$name"; then
+                rm -f "$target"
+                die "could not record ownership for .github/agents/$name"
+            fi
+            deployed=$((deployed + 1))
+        fi
+    done
+
+    if ! $DRY_RUN && (( deployed > 0 )); then
+        log "  + .github/agents/ ($deployed copilot profile(s) deployed)"
+    fi
+}
+
+# Counterpart for uninstall: only remove agent profile symlinks explicitly
+# recorded when this installer created them. An identical pre-existing link is
+# user-owned and must survive uninstall.
+remove_agent_profiles() {
+    local target_dir="$PROJECT_PATH/.github/agents"
+    [[ -d "$target_dir" || -L "$target_dir" ]] || return 0
+    [[ -f "$AGENT_MANIFEST_PATH" ]] || return 0
+    [[ ! -L "$AGENT_MANIFEST_PATH" ]] || { warn "$AGENT_MANIFEST_PATH is a symlink; refusing agent cleanup"; return 0; }
+    local src_dir="$ARIS_REPO/$AGENT_PROFILES_SRC"
+    local name target removed=0
+
+    while IFS= read -r name; do
+        [[ "$name" =~ $SAFE_NAME_REGEX && "$name" == *.agent.md ]] || { warn "invalid agent manifest entry: $name"; continue; }
+        target="$target_dir/$name"
+        [[ -L "$target" ]] || continue
+        local cur; cur="$(read_link_target "$target")"
+        [[ "$cur" != /* ]] && cur="$(canonicalize "$(dirname "$target")/$cur")"
+        # Revalidate the exact source target before mutation.
+        if [[ "$cur" == "$src_dir/$name" ]]; then
+            if $DRY_RUN; then
+                log "  (dry-run) rm $target"
+            else
+                rm -f "$target"
+                removed=$((removed + 1))
+            fi
+        fi
+    done < "$AGENT_MANIFEST_PATH"
+
+    if ! $DRY_RUN && (( removed > 0 )); then
+        log "  - .github/agents/ ($removed copilot profile(s) removed)"
+        # Remove directory if empty after cleanup
+        rmdir "$target_dir" 2>/dev/null || true
+    fi
+    if ! $DRY_RUN; then
+        rm -f "$AGENT_MANIFEST_PATH"
+    fi
+}
+
+# #431: the profiles only serve auto-review-loop's Copilot backend, and
+# .github/ is the user's namespace — so deploy them only while that skill is
+# installed, and let the user say no outright. The opt-out is remembered in
+# .aris/ so a later reconcile does not bring the links back.
+agent_profiles_wanted() {  # $1 = selected file
+    case "$AGENT_PROFILES_FLAG" in
+        off) return 1 ;;
+        on)  ;;
+        *)   [[ ! -f "$AGENT_PROFILES_OPT_OUT_PATH" ]] || return 1 ;;
+    esac
+    in_file "auto-review-loop" "$1"
+}
+
+persist_agent_profiles_choice() {
+    $DRY_RUN && return 0
+    case "$AGENT_PROFILES_FLAG" in
+        off) mkdir -p "$PROJECT_ARIS_DIR"; : > "$AGENT_PROFILES_OPT_OUT_PATH" ;;
+        on)  rm -f "$AGENT_PROFILES_OPT_OUT_PATH" ;;
+    esac
+}
+
+sync_agent_profiles() {  # $1 = selected file
+    if agent_profiles_wanted "$1"; then
+        ensure_agent_profiles
+    elif [[ -f "$AGENT_MANIFEST_PATH" ]]; then
+        if [[ "$AGENT_PROFILES_FLAG" == "off" || -f "$AGENT_PROFILES_OPT_OUT_PATH" ]]; then
+            log "  Copilot profiles opted out — removing the ones this installer created"
+        else
+            log "  auto-review-loop not installed — removing the Copilot profiles this installer created"
+        fi
+        remove_agent_profiles
+    fi
+}
+
 commit_manifest() {
     local manifest_tmp="$1"
     if $DRY_RUN; then log "  (dry-run) would commit manifest"; return; fi
@@ -1093,6 +1252,8 @@ do_uninstall() {
     # is exactly the managed symlink. Anything else (user-created dir, custom
     # symlink target) is left alone.
     remove_tools_symlink
+    # F5: best-effort cleanup of managed agent profile symlinks.
+    remove_agent_profiles
     if ! $DRY_RUN; then
         # Keep .prev for forensics, remove current manifest
         [[ -f "$MANIFEST_PATH" ]] && mv -f "$MANIFEST_PATH" "$MANIFEST_PREV"
@@ -1189,6 +1350,8 @@ if $DRY_RUN; then
     # #174 preview: print the planned `.aris/tools` symlink action (function
     # is idempotent + DRY_RUN-aware, so it just logs in this mode)
     ensure_tools_symlink
+    # F5 preview: print planned agent profile symlinks (or their removal).
+    sync_agent_profiles "$SELECTED_FILE"
     log ""
     log "(dry-run) no changes made"
     exit 0
@@ -1212,6 +1375,11 @@ commit_manifest "$MANIFEST_TMP"
 # #174 Phase 0: ensure project-local .aris/tools symlink (purely additive).
 # Runs after manifest commit so a failure here doesn't roll back skill links.
 ensure_tools_symlink
+# F5 / #431: Copilot agent profiles from <aris-repo>/.github/agents/ — only
+# while auto-review-loop is installed and not opted out; otherwise clean ours up.
+persist_agent_profiles_choice
+sync_agent_profiles "$SELECTED_FILE"
+
 
 # #366: persist declined skills + global repo pointer (both best-effort,
 # after manifest commit for the same reason as above).
