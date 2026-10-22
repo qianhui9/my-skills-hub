@@ -78,14 +78,28 @@ Examples:
 
 ### Per-source/per-paper fan-out
 
-Retrieval and extraction are breadth-bound. Use fresh `spawn_agent` shards when
-delegation is available, or the same work sequentially otherwise. Every shard
-is read-only and returns
-`{"shard_id": ..., "entries": [{"payload": ..., "dedup_key": "<DOI/arXiv/id>"}]}`.
-The parent invokes every resolved source, unions results, mechanically dedups on
-canonical IDs, and writes once. Shards do not rank paper quality. Source
-verification remains deterministic; optional Codex synthesis review is
-same-family provisional. See
+Retrieval and extraction are breadth-bound. Freeze and sort canonical paper IDs,
+then partition them deterministically into `max_shards: 8` or fewer batches.
+The executor may use at most `max_concurrency: 4` active shards and requests
+`max_turns: 8`, read-only behavior, and `recursion: false` in every
+leaf-equivalent prompt.
+
+**Stock Codex enforcement: prompt-only.** Standard Codex `spawn_agent` exposes
+no per-child tool allowlist, recursion flag, or child turn-cap parameter. These
+worker restrictions are prompt conventions unless the active host supplies
+structural enforcement, so stock Codex does not provide the same hard tool,
+non-recursion, and turn boundary as the Claude leaf. The executor still enforces
+fixed shard and concurrency limits, no replacement workers, and the coverage
+receipt. A failed, malformed, or timed-out shard gets at most one executor-side
+**sequential fallback** and no replacement agent. Each shard
+returns `{shard_id, assigned_unit_ids, covered_unit_ids, status, entries,
+errors}`, with canonical DOI/arXiv/title IDs as `dedup_key`.
+
+Before synthesis, emit a **coverage receipt** that reconciles the frozen paper
+IDs with covered IDs and lists every failed or uncovered paper explicitly. The
+parent invokes every resolved source, unions results, mechanically dedups on
+canonical IDs, and writes once. Source verification remains deterministic;
+optional Codex synthesis review is same-family provisional. See
 [`fan-out-pattern.md`](../shared-references/fan-out-pattern.md).
 
 ### Step 0a: Search Zotero Library (if available)
@@ -144,7 +158,13 @@ Before searching online, check if the user already has relevant papers locally:
 
 5. **Build local knowledge base**: Compile summaries into a "papers you already have" section. This becomes the starting point — external search fills the gaps.
 
-> 📚 If no local papers are found, skip to Step 1. If the user has a comprehensive local collection, the external search can be more targeted (focus on what's missing).
+> 📚 If the user has a comprehensive local collection, the external search can be more targeted (focus on what's missing).
+>
+> ⚠️ **If all three PAPER_LIBRARY paths miss, say so before moving on** — do not skip silently. A user whose PDFs live in a reference manager (Zotero, Mendeley, ...) otherwise assumes `— sources: all` covered them. Emit:
+>
+> `WARN: local contributed nothing — no PDFs found in papers/, literature/, or a configured paper library. To include yours, add a "## Paper Library" heading to AGENTS.md followed by the directory path.`
+>
+> Then continue to Step 1.
 
 ### Step 1: Search (external)
 - Use WebSearch to find recent papers on the topic
@@ -397,6 +417,29 @@ ARXIV_FETCHER=""
 - Skip papers already in the local library
 - 1-second delay between downloads (rate limiting)
 - Verify each PDF > 10 KB
+
+### Step 1.6: Freeze Worker-Readable Evidence (mandatory before dispatch)
+
+The executor still owns the retrieval context and all writes. Before Step 2,
+it must create one read-only file per shard under
+`.aris/verify-papers/research-lit-evidence/`. Each file contains only that
+shard's assigned papers and records `paper_id`, `title`,
+`verification_status`, `abstract`, `source_excerpt`, `local_pdf_path`,
+`local_note_paths`, and `evidence_status`.
+
+Populate these fields from already retrieved API abstracts/excerpts, Zotero or
+Obsidian text, or readable local PDF/note paths. Identity fields or remote URLs
+alone are not sufficient for a worker that lacks reliable access to the
+parent's retrieval context. Pass the shard's absolute evidence-file path and
+assigned IDs in the worker prompt; the worker may extract only claims supported
+by that file.
+
+If a paper has no abstract, source excerpt, readable local PDF, or readable
+local note, record `evidence_status: UNPROCESSABLE_NO_LOCAL_EVIDENCE`. Do not
+dispatch it as completed work and do not infer method or results from its title.
+The executor may use the one allowed sequential fallback to gather/process
+local evidence; otherwise keep the paper explicitly uncovered and
+`UNPROCESSED` in the coverage receipt.
 
 ### Step 2: Analyze Each Paper
 For each relevant paper (from all sources), extract:

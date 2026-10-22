@@ -1,6 +1,6 @@
 # ARIS Skills Catalog
 
-Every skill that ships with ARIS, grouped by role. **82 skills** as of the
+Every skill that ships with ARIS, grouped by role. **85 skills** as of the
 latest update; new skills land via PR and get added to the table below.
 
 - Each `Skill` link goes to the canonical `SKILL.md` (the LLM-readable spec).
@@ -55,7 +55,7 @@ Paper retrieval, summarization, novelty verification.
 | [`/web-debug-search`](../skills/web-debug-search/SKILL.md) | Multi-source debugging search across GitHub, Stack Exchange, Chinese technical communities, and general web — routing, compatibility, and discovery-only results | None |
 | [`/openalex`](../skills/openalex/SKILL.md) | OpenAlex API search — 250M+ open citation graph, institutional affiliations, funding data | `pip install requests` |
 | [`/gemini-search`](../skills/gemini-search/SKILL.md) | Gemini-driven literature discovery — decomposes topics into sub-problems, aliases, variants | `gemini-cli` v0.40+ |
-| [`/alphaxiv`](../skills/alphaxiv/SKILL.md) | Quick single-paper lookup via [AlphaXiv](https://alphaxiv.org) — three-tier fallback (overview → markdown → LaTeX source) | None |
+| [`/alphaxiv`](../skills/alphaxiv/SKILL.md) | Quick single-paper lookup via [AlphaXiv](https://www.alphaxiv.org) — three-tier fallback (overview → markdown → LaTeX source) | None |
 | [`/comm-lit-review`](../skills/comm-lit-review/SKILL.md) | Communications-domain literature review with Claude-style knowledge-base-first retrieval — wireless / networking / satellite / Wi-Fi / cellular | None |
 | [`/novelty-check`](../skills/novelty-check/SKILL.md) | Verify a research idea is novel against recent literature — multi-source search + cross-model verification + closest-prior-work table | Codex MCP |
 
@@ -78,6 +78,7 @@ Orchestrating and independently auditing mathematical proofs.
 | Skill | Role | Requires |
 |---|---|---|
 | [`/proof-orchestrator`](../skills/proof-orchestrator/SKILL.md) | Stateful proof-run orchestration: run directories, cross-run continuation, manual GPT Pro handoff packages, optional DeepSeek second opinion (additional evidence only — `/proof-writer` drafts proofs, `/proof-checker` owns verification and submission acceptance) | None by default; llm-chat MCP only for optional DeepSeek review |
+| [`/lean-formalize`](../skills/lean-formalize/SKILL.md) | Formalize, continue, or audit a Lean proof when requested or useful for a substantial mathematical obligation; preserve the original statement, connect actual inputs, and verify the final declaration and its axioms | Lean project/toolchain; authorized cross-family reviewer for substantial proof checkpoints |
 
 ## 🧪 Experiments & Infrastructure
 
@@ -85,6 +86,7 @@ GPU job submission, scheduling, monitoring, profiling.
 
 | Skill | Role | Requires |
 |---|---|---|
+| [`/research-implement-feature`](../skills/research-implement-feature/SKILL.md) | Build from a plain "implement X" request — runnable spine first, then one feature per rung; every under-determined decision declared in an assumption ledger before the code depends on it, plus a cross-model sweep for the ones that slipped through undeclared | Codex MCP |
 | [`/run-experiment`](../skills/run-experiment/SKILL.md) | Deploy experiments to local / remote / Vast.ai / Modal GPU | GPU (configurable) |
 | [`/monitor-experiment`](../skills/monitor-experiment/SKILL.md) | Monitor running experiments, check progress, collect results | None |
 | [`/analyze-results`](../skills/analyze-results/SKILL.md) | Compute statistics, generate comparison tables, surface insights from experiment results | None |
@@ -106,6 +108,7 @@ Cross-model critique, integrity checking, evidence verification.
 | [`/result-to-claim`](../skills/result-to-claim/SKILL.md) | Map experimental results to intended claims — judges what's supported, what's not, what's missing; routes to next action | Codex MCP |
 | [`/paper-claim-audit`](../skills/paper-claim-audit/SKILL.md) | Zero-context numeric verification — every number / comparison / scope claim in the paper checked against raw result files by a fresh reviewer (no confirmation bias) | Codex MCP |
 | [`/citation-audit`](../skills/citation-audit/SKILL.md) | Bibliography audit — existence + metadata correctness + context appropriateness for every `\cite{}`; `--soft-only` mode for frozen-bib resubmits | Codex MCP, web access |
+| [`/citation-crosscheck`](../skills/citation-crosscheck/SKILL.md) | Double-blind bib-vs-web field audit — one agent extracts each cited entry verbatim from the local `.bib`, a second re-fetches it from the web blind to the `.bib`, a third emits a mechanical field-by-field delta (author set+order, year, venue, arXiv-id/DOI); a deterministic `cx_verify.py` gate assigns MATCH/MINOR and fails closed to the main agent's primary-source fetch; side-by-side `.xlsx` per entry | web access; openpyxl (for the `.xlsx`) |
 | [`/proof-checker`](../skills/proof-checker/SKILL.md) | Rigorous mathematical proof verification — 20-category issue taxonomy, two-axis severity, side-condition checklists, counterexample red team, proof-obligation ledger | Codex MCP |
 | [`/kill-argument`](../skills/kill-argument/SKILL.md) | Two-thread adversarial review — Thread 1 writes the strongest 200-word rejection memo; Thread 2 (independent) defends point-by-point and surfaces still-unresolved issues | Codex MCP |
 | [`/integrity-forensics`](../skills/integrity-forensics/SKILL.md) | SHA-pinned thin launcher for [Anti-Autoresearch](https://github.com/wanshuiyin/Anti-Autoresearch) — evidence-ledger forensic sweep (46 patterns, deterministic adjudicator) → typed BLOCK/WARN/NO_NEW_BLOCKER gate + append-only obligations ledger; default pre-submission self-audit in `/paper-writing` | git, Codex MCP (via upstream) |
