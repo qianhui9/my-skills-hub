@@ -14,6 +14,10 @@ live complaint in issue #272: "the survey run failed — can it continue from th
 last task?"). `tools/run_state.py` fixes that: a run is an **ordered list of
 phases with status**, persisted at `<root>/.aris/runs/<run_id>.json`.
 
+Workflow-level deterministic checks are recorded separately under `gates` in
+the same state file. A gate may emit `PASS` or `BLOCKED` with durable reasons;
+it does not replace the per-phase acceptance record.
+
 ## The one idea that makes this ARIS, not just "reopen the session"
 
 Resumption is not "reopen the id" — it is **resolve FORWARD to where progress
@@ -73,19 +77,20 @@ triggers resume, it does not own the verdict).
 ## Helper API / CLI
 
 ```
-from run_state import start_run, set_status, accept, resume_point
+from run_state import start_run, set_status, accept, record_gate_result, resume_point
 start_run(root, run_id, phases)                 # phases: ["W1","W1.5","W2","W3"]
 set_status(root, run_id, phase, "running"|"done"|"failed", artifact=path)
 accept(root, run_id, phase, verdict_id, reviewer)   # the ONLY path to `accepted`
+record_gate_result(root, run_id, gate, "PASS"|"BLOCKED", reasons)
 mark_provisional(root, run_id, phase, verdict_id, reviewer)  # same-family terminal receipt
 resume_point(root, run_id)  # -> first NON-TERMINAL phase, or None
 ```
 
 ```
-python3 tools/run_state.py start  <root> <run_id> --phases "W1,W1.5,W2,W3" --executor codex-gpt-5.6-sol --provisional-advances
+python3 tools/run_state.py start  <root> <run_id> --phases "W1,W1.5,W2,W3" --executor codex-gpt-6-astra --provisional-advances
 python3 tools/run_state.py set    <root> <run_id> W1 done --artifact idea-stage/IDEA_REPORT.md
-python3 "$RUN_STATE" start <root> <run_id> --phases W1,W1.5,W2 --executor codex-gpt-5.6-sol --provisional-advances
-python3 "$RUN_STATE" mark-provisional <root> <run_id> W1 --verdict-id agent:019e... --reviewer gpt-5.6-sol
+python3 "$RUN_STATE" start <root> <run_id> --phases W1,W1.5,W2 --executor codex-gpt-6-astra --provisional-advances
+python3 "$RUN_STATE" mark-provisional <root> <run_id> W1 --verdict-id agent:019e... --reviewer gpt-6-astra
 python3 "$RUN_STATE" accept <root> <run_id> W2 --verdict-id pytest:report --reviewer deterministic:pytest
 python3 tools/run_state.py resume <root> <run_id>   # prints the resume-target phase name on stdout
 python3 tools/run_state.py status <root> <run_id>
