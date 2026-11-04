@@ -21,6 +21,8 @@ import argparse
 import json
 import os
 import re
+import shutil
+import subprocess
 import sys
 import time
 import urllib.error
@@ -30,8 +32,18 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 _ATOM_NS = "http://www.w3.org/2005/Atom"
-_API_BASE = "http://export.arxiv.org/api/query"
+_API_BASE = "https://export.arxiv.org/api/query"
 _MIN_PDF_BYTES = 10_240
+
+
+def _validate_pdf(size_bytes: int, first_bytes: bytes) -> None:
+    """Reject truncated downloads and non-PDF response bodies."""
+    if size_bytes < _MIN_PDF_BYTES:
+        raise ValueError(
+            f"Downloaded file is only {size_bytes} bytes - likely an error page, not a PDF"
+        )
+    if b"%PDF-" not in first_bytes[:1024]:
+        raise ValueError("Downloaded file has no PDF header - likely an error page, not a PDF")
 
 
 def _arxiv_user_agent() -> str:
@@ -90,6 +102,23 @@ def _api_url(query: str, max_results: int, start: int) -> str:
     return f"{_API_BASE}?{urllib.parse.urlencode(params)}"
 
 
+def _curl_get(url: str, headers: dict, timeout: float) -> bytes | None:
+    """Re-issue a GET through ``curl`` after urllib was answered HTTP 406.
+
+    export.arxiv.org refuses urllib from some networks for minutes at a time
+    while curl gets 200 on the same URL, so retrying urllib cannot recover.
+    Returns the body, or None when curl is missing or the request fails.
+    """
+    curl = shutil.which("curl")
+    if curl is None:
+        return None
+    cmd = [curl, "-sf", "--max-time", str(int(timeout))]
+    for key, value in headers.items():
+        cmd += ["-H", f"{key}: {value}"]
+    proc = subprocess.run(cmd + [url], capture_output=True)
+    return proc.stdout if proc.returncode == 0 else None
+
+
 def _fetch_atom(url: str) -> ET.Element:
     """Fetch an arXiv Atom feed and return the parsed XML root.
 
@@ -98,16 +127,21 @@ def _fetch_atom(url: str) -> ET.Element:
     plain-text ``Rate exceeded.`` body the API sometimes returns with 200 OK.
     Raises RuntimeError when all retries are exhausted.
     """
-    req = urllib.request.Request(url, headers={"User-Agent": _arxiv_user_agent()})
+    headers = {"User-Agent": _arxiv_user_agent()}
+    req = urllib.request.Request(url, headers=headers)
     for attempt in (1, 2, 3):
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
                 body = resp.read()
         except urllib.error.HTTPError as e:
-            if e.code == 429 and attempt < 3:
+            rescued = _curl_get(url, headers, 30) if e.code == 406 else None
+            if rescued is not None:
+                body = rescued
+            elif e.code in (406, 408, 429) and attempt < 3:
                 time.sleep(5 * attempt)
                 continue
-            raise RuntimeError(f"arXiv API fetch failed: {e}")
+            else:
+                raise RuntimeError(f"arXiv API fetch failed: {e}")
         except (urllib.error.URLError, TimeoutError, OSError) as e:
             if attempt < 3:
                 time.sleep(2 * attempt)
@@ -170,10 +204,21 @@ def download(arxiv_id: str, output_dir: str = "papers") -> dict:
     dest = dest_dir / f"{safe_id}.pdf"
 
     if dest.exists():
+        size_bytes = dest.stat().st_size
+        with dest.open("rb") as cached_file:
+            first_bytes = cached_file.read(1024)
+        try:
+            _validate_pdf(size_bytes, first_bytes)
+        except ValueError:
+            # Poisoned cache entry (e.g. an HTML error page saved as .pdf by an
+            # older version): drop it so the next call re-downloads instead of
+            # failing forever.
+            dest.unlink()
+            raise
         return {
             "id": clean_id,
             "path": str(dest),
-            "size_kb": dest.stat().st_size // 1024,
+            "size_kb": size_bytes // 1024,
             "skipped": True,
         }
 
@@ -199,10 +244,7 @@ def download(arxiv_id: str, output_dir: str = "papers") -> dict:
     else:
         raise RuntimeError(f"Failed to download {pdf_url} after 3 attempts")
 
-    if len(data) < _MIN_PDF_BYTES:
-        raise ValueError(
-            f"Downloaded file is only {len(data)} bytes - likely an error page, not a PDF"
-        )
+    _validate_pdf(len(data), data)
 
     dest.write_bytes(data)
     return {

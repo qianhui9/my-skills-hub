@@ -166,6 +166,38 @@ def test_search_raises_after_three_rate_exceeded_bodies(monkeypatch):
     assert calls["n"] == 3
 
 
+def test_search_retries_on_http_406_then_succeeds(monkeypatch):
+    """export.arxiv.org returns 406 intermittently; it must not be permanent."""
+    mod = load_module()
+    err_406 = urllib.error.HTTPError(
+        url="http://example/", code=406, msg="Not Acceptable",
+        hdrs=None, fp=BytesIO(b""),
+    )
+    calls = _patch_urlopen(monkeypatch, mod, [err_406, VALID_XML])
+    monkeypatch.setattr(mod, "_curl_get", lambda url, headers, timeout: None)  # curl unavailable
+
+    results = mod.search("2509.14933", max_results=1)
+
+    assert calls["n"] == 2
+    assert results[0]["title"] == "Test Paper"
+
+
+def test_search_406_is_rescued_through_curl(monkeypatch):
+    """urllib refused with 406, curl gets the feed: one urllib call, no retry wait."""
+    mod = load_module()
+    err_406 = urllib.error.HTTPError(
+        url="http://example/", code=406, msg="Not Acceptable",
+        hdrs=None, fp=BytesIO(b""),
+    )
+    calls = _patch_urlopen(monkeypatch, mod, [err_406])
+    monkeypatch.setattr(mod, "_curl_get", lambda url, headers, timeout: VALID_XML)
+
+    results = mod.search("2509.14933", max_results=1)
+
+    assert calls["n"] == 1
+    assert results[0]["title"] == "Test Paper"
+
+
 def test_search_non_429_http_error_does_not_retry(monkeypatch):
     mod = load_module()
     err_500 = urllib.error.HTTPError(
@@ -218,6 +250,30 @@ def test_user_agent_no_contact_when_env_unset(monkeypatch):
 # ---- download() retry behavior -------------------------------------------
 
 _FAKE_PDF = b"%PDF-1.4\n" + b"x" * 20_000  # > _MIN_PDF_BYTES
+
+
+def test_download_rejects_large_non_pdf_response(monkeypatch, tmp_path):
+    mod = load_module()
+    html_error = b"<!doctype html><title>Service unavailable</title>" + b"x" * 20_000
+    _patch_urlopen(monkeypatch, mod, [html_error])
+
+    with pytest.raises(ValueError, match="not a PDF"):
+        mod.download("2509.14933", output_dir=str(tmp_path))
+
+    assert not (tmp_path / "2509.14933.pdf").exists()
+
+
+def test_download_rejects_cached_non_pdf_response(tmp_path):
+    mod = load_module()
+    cached = tmp_path / "2509.14933.pdf"
+    html_error = b"<!doctype html><title>Service unavailable</title>" + b"x" * 20_000
+    cached.write_bytes(html_error)
+
+    with pytest.raises(ValueError, match="not a PDF"):
+        mod.download("2509.14933", output_dir=str(tmp_path))
+
+    # The poisoned entry is evicted so the next call re-downloads.
+    assert not cached.exists()
 
 
 def test_download_retries_on_429_then_succeeds(monkeypatch, tmp_path):
