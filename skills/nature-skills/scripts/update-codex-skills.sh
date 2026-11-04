@@ -99,6 +99,8 @@ while [ "$#" -gt 0 ]; do
       ;;
     --dest=*)
       DST="${1#*=}"
+      # The shell only expands a leading ~ for a word that starts with it, not after "--dest=".
+      case "$DST" in "~") DST="$HOME" ;; "~/"*) DST="$HOME/${DST#\~/}" ;; esac
       ;;
     --help|-h)
       usage
@@ -233,6 +235,16 @@ verify_install() {
 
 print_dependency_notes() {
   notes=0
+  if [ -f "$SRC/nature-figure/requirements.txt" ]; then
+    notes=1
+    echo "    # required for automatic rendered collision QA in nature-figure"
+    echo "    python -m pip install -r $SRC/nature-figure/requirements.txt"
+  fi
+  if [ -f "$SRC/nature-image2ppt/requirements.txt" ]; then
+    notes=1
+    echo "    # required before using nature-image2ppt (Python 3.10+)"
+    echo "    python -m pip install -r $SRC/nature-image2ppt/requirements.txt"
+  fi
   if [ -f "$SRC/nature-paper-to-patent/requirements.txt" ]; then
     notes=1
     echo "    python -m pip install -r $SRC/nature-paper-to-patent/requirements.txt"
@@ -247,7 +259,7 @@ print_dependency_notes() {
     echo "    python -m pip install -r $SRC/nature-academic-search/mcp-server/requirements.txt"
     echo "    Configure PUBMED_EMAIL and any optional Elsevier credentials separately."
   fi
-  [ "$notes" = "0" ] || echo "    Python dependencies are optional and are not installed automatically."
+  [ "$notes" = "0" ] || echo "    Python dependencies are not installed automatically."
 }
 
 if [ "$CHECK_ONLY" = "1" ]; then
